@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/cmd/clibase"
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/services/repo"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/cmd/clibase"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/services/repo"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 type Config struct {

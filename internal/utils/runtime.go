@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/engigu/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/logger"
 )
 
 // InitRuntime 设置运行时内存和性能优化参数

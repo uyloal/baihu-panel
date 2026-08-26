@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/engigu/baihu-panel/cmd/clibase"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/cmd/clibase"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 func printHelp() {

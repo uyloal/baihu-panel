@@ -16,7 +16,7 @@ package messenger
 
 import (
 	"fmt"
-	"github.com/engigu/baihu-panel/internal/sdk/messenger/channels"
+	"github.com/uyloal/baihu-panel/internal/sdk/messenger/channels"
 	"sync"
 )
 
@@ -29,7 +29,7 @@ import (
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 
 // 重导出 channels 包的类型，方便外部使用

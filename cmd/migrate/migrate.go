@@ -2,8 +2,8 @@ package migrate
 
 import (
 	"fmt"
-	"github.com/engigu/baihu-panel/internal/bootstrap"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/bootstrap"
+	"github.com/uyloal/baihu-panel/internal/services"
 )
 
 func Run(args []string) {

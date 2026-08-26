@@ -1,4 +1,4 @@
-module github.com/engigu/baihu-panel
+module github.com/uyloal/baihu-panel
 
 go 1.26.0
 

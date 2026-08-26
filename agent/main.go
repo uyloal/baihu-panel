@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	internalLogger "github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/systime"
-	"github.com/engigu/baihu-panel/internal/utils"
+	internalLogger "github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/systime"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 const ServiceName = "baihu-agent"

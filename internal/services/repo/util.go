@@ -3,7 +3,7 @@ package repo
 import (
 	"bufio"
 	"fmt"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/utils"
 	"github.com/robfig/cron/v3"
 	"os"
 	"path/filepath"

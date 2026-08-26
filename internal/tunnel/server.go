@@ -3,11 +3,11 @@ package tunnel
 import (
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -24,7 +24,7 @@ import (
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {

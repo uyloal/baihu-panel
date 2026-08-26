@@ -9,7 +9,7 @@ async function scrapeAll() {
   let reachedEnd = false;
   while (!reachedEnd) {
     console.log(`Fetching page ${page}...`);
-    const url = `https://github.com/engigu/baihu-panel/pkgs/container/baihu/versions?page=${page}`;
+    const url = `https://github.com/uyloal/baihu-panel/pkgs/container/baihu/versions?page=${page}`;
     let html;
     let success = false;
     for (let retry = 1; retry <= 3; retry++) {

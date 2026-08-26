@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/tunnel"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/tunnel"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

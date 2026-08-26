@@ -85,12 +85,12 @@ export default defineConfig({
         ],
 
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/engigu/baihu-panel' }
+            { icon: 'github', link: 'https://github.com/uyloal/baihu-panel' }
         ],
 
         footer: {
             message: 'Released under the MIT License.',
-            copyright: 'Copyright © 2026-present engigu'
+            copyright: 'Copyright © 2026-present uyloal'
         },
 
         search: {

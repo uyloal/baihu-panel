@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/engigu/baihu-panel/cmd"
+	"github.com/uyloal/baihu-panel/cmd"
 )
 
 // @title Baihu Panel API

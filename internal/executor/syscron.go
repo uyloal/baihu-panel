@@ -3,8 +3,8 @@ package executor
 import (
 	"sync"
 
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/systime"
 	"github.com/robfig/cron/v3"
 )
 

@@ -1,7 +1,7 @@
 package channels
 
 import (
-	"github.com/engigu/baihu-panel/internal/sdk/message"
+	"github.com/uyloal/baihu-panel/internal/sdk/message"
 	"strconv"
 )
 
@@ -14,7 +14,7 @@ import (
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 
 type GotifyChannel struct{ *BaseChannel }

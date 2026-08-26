@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/services/relation"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/services/relation"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 // ParseRepoScriptsAndAddCron 扫描仓库目录中的脚本，解析 cron 和环境注释，并注册任务

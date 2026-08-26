@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/eventbus"
-	"github.com/engigu/baihu-panel/internal/middleware"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/eventbus"
+	"github.com/uyloal/baihu-panel/internal/middleware"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pquerna/otp/totp"

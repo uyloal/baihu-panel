@@ -5,9 +5,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 // Manager 依赖管理器接口

@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // TaskLanguages 自定义语言配置列表类型，处理 JSON 序列化

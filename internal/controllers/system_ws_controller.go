@@ -3,9 +3,9 @@ package controllers
 import (
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

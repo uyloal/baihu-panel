@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 // RepoParserStrategy 定义不同仓库解析策略的接口

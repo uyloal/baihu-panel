@@ -1,16 +1,16 @@
 # 白虎面板 
 
-[![Hits](https://hits.sh/github.com/engigu/baihu-panel.svg?view=today-total)](https://hits.sh/github.com/engigu/baihu-panel/)
-![Version](https://img.shields.io/github/v/tag/engigu/baihu-panel?color=44cc11&label=docker%20version&sort=semver)
-![Image Size](https://ghcr-badge.egpl.dev/engigu/baihu/size?color=%2344cc11&tag=latest&label=docker+image&trim=)
-![Image pulls](https://img.shields.io/badge/dynamic/json?url=https://ghcr-badge.elias.eu.org/api/engigu/baihu-panel/baihu&query=downloadCount&style=flat&label=docker%20pulls&color=44cc11)
+[![Hits](https://hits.sh/github.com/uyloal/baihu-panel.svg?view=today-total)](https://hits.sh/github.com/uyloal/baihu-panel/)
+![Version](https://img.shields.io/github/v/tag/uyloal/baihu-panel?color=44cc11&label=docker%20version&sort=semver)
+![Image Size](https://ghcr-badge.egpl.dev/uyloal/baihu/size?color=%2344cc11&tag=latest&label=docker+image&trim=)
+![Image pulls](https://img.shields.io/badge/dynamic/json?url=https://ghcr-badge.elias.eu.org/api/uyloal/baihu-panel/baihu&query=downloadCount&style=flat&label=docker%20pulls&color=44cc11)
 
 
 白虎面板 (Baihu Panel) 是一款极致轻量、高性能的自动化任务调度平台。采用 Go + Vue3 架构，专注于高性能与低系统开销。通过深度集成 Mise 运行时管理，它原生支持 Python、Node.js、Go、Rust、PHP 等所有主流语言环境的动态安装（几乎所有的版本）与统一依赖管理。支持 Docker/Docker-Compose 一键部署，开箱即用，是您理想的轻量化脚本托管与任务调度解决方案。
 
 演示站点(演示站点的服务器比较烂，见谅)  [演示站点](https://baihu-demo-site.qwapi.eu.org/)
 
-文档说明 [文档说明](https://engigu.github.io/baihu-panel/)
+文档说明 [文档说明](https://uyloal.github.io/baihu-panel/)
 
 ## 更新日志 ☕
 
@@ -221,7 +221,7 @@ docker run -d \
   -e BH_DB_TABLE_PREFIX=baihu_ \
   -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
-  ghcr.io/engigu/baihu:latest
+  ghcr.io/uyloal/baihu:latest
 ```
 
 > **提示**：如需通过反向代理部署在子路径（如 `/baihu`），添加环境变量：
@@ -235,7 +235,7 @@ docker run -d \
 ```yaml
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"
@@ -279,7 +279,7 @@ docker run -d \
   -e BH_DB_TABLE_PREFIX=baihu_ \
   -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
-  ghcr.io/engigu/baihu:latest
+  ghcr.io/uyloal/baihu:latest
 ```
 
 > **提示**：如需配置 URL 前缀，添加 `-e BH_SERVER_URL_PREFIX=/baihu`
@@ -289,7 +289,7 @@ docker run -d \
 ```yaml
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"
@@ -336,7 +336,7 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
-  ghcr.io/engigu/baihu:latest
+  ghcr.io/uyloal/baihu:latest
 ```
 
 **Docker Compose：**
@@ -344,7 +344,7 @@ docker run -d \
 ```yaml
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"
@@ -401,7 +401,7 @@ table_prefix = baihu_
 services:
   # 白虎面板
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"
@@ -454,7 +454,7 @@ services:
 services:
   # 白虎面板
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"

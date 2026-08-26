@@ -74,7 +74,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w -X github.com/engigu/baihu-panel/internal/constant.Version=${VERSION_VAL} -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
+    go build -ldflags="-s -w -X github.com/uyloal/baihu-panel/internal/constant.Version=${VERSION_VAL} -X 'github.com/uyloal/baihu-panel/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
     -o baihu .
 
 # ================================
@@ -128,7 +128,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Stage 4: Final image
 # ================================
 ARG BASE_TAG
-FROM ghcr.io/engigu/baihu:${BASE_TAG}
+FROM ghcr.io/uyloal/baihu:${BASE_TAG}
 
 ENV TZ=Asia/Shanghai
 ENV LANG=C.UTF-8

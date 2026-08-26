@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/logger"
 	
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/yamux"
@@ -22,7 +22,7 @@ import (
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 // ProxyHTTP 以完全透明的流式转发将 HTTP 请求代理到远程节点 (主节点调用)
 func ProxyHTTP(nodeID string, c *gin.Context, targetPath string) error {

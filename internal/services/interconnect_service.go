@@ -3,9 +3,9 @@ package services
 import (
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 type InterconnectService struct{}

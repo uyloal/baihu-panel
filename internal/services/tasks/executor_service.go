@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/eventbus"
-	"github.com/engigu/baihu-panel/internal/executor"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/eventbus"
+	"github.com/uyloal/baihu-panel/internal/executor"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"gorm.io/gorm"
 )

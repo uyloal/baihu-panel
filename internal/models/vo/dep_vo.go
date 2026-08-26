@@ -3,7 +3,7 @@ package vo
 import (
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 // DependencyVO 依赖包视图对象

@@ -17,7 +17,7 @@ import (
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 // wsConn 包装 gorilla websocket 以实现 net.Conn 接口
 type wsConn struct {

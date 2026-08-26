@@ -1,16 +1,16 @@
 package cmd
 
 import (
-	"github.com/engigu/baihu-panel/cmd/builtininstall"
-	"github.com/engigu/baihu-panel/cmd/completion"
-	"github.com/engigu/baihu-panel/cmd/depinstall"
-	"github.com/engigu/baihu-panel/cmd/reposync"
-	"github.com/engigu/baihu-panel/cmd/resetpwd"
-	"github.com/engigu/baihu-panel/cmd/restore"
-	"github.com/engigu/baihu-panel/cmd/task"
-	"github.com/engigu/baihu-panel/cmd/version"
-	"github.com/engigu/baihu-panel/cmd/webui"
-	"github.com/engigu/baihu-panel/internal/bootstrap"
+	"github.com/uyloal/baihu-panel/cmd/builtininstall"
+	"github.com/uyloal/baihu-panel/cmd/completion"
+	"github.com/uyloal/baihu-panel/cmd/depinstall"
+	"github.com/uyloal/baihu-panel/cmd/reposync"
+	"github.com/uyloal/baihu-panel/cmd/resetpwd"
+	"github.com/uyloal/baihu-panel/cmd/restore"
+	"github.com/uyloal/baihu-panel/cmd/task"
+	"github.com/uyloal/baihu-panel/cmd/version"
+	"github.com/uyloal/baihu-panel/cmd/webui"
+	"github.com/uyloal/baihu-panel/internal/bootstrap"
 )
 
 // InitHandlers 在 cmd 包内部统一注册所有的子命令 handler

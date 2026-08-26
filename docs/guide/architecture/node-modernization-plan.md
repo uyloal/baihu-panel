@@ -151,8 +151,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 type DepService struct{}
@@ -269,7 +269,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 type PackageJson struct {

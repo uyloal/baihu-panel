@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // Dependency 依赖包模型

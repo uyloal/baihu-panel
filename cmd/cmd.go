@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/bootstrap"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // CommandSpec 兼容引用 constant.CommandSpec

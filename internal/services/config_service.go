@@ -4,9 +4,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"gopkg.in/ini.v1"
 )
@@ -96,7 +96,7 @@ func LoadConfig(path string) (*AppConfig, error) {
 			Port:        3306,
 			User:        "root",
 			Password:    "",
-			DBName:      "github.com/engigu/baihu-panel",
+			DBName:      "github.com/uyloal/baihu-panel",
 			Path:        constant.DefaultDBPath,
 			TablePrefix: "baihu_",
 		},

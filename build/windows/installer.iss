@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Baihu Panel"
-#define MyAppPublisher "Engigu"
-#define MyAppURL "https://github.com/engigu/baihu-panel"
+#define MyAppPublisher "Uyloal"
+#define MyAppURL "https://github.com/uyloal/baihu-panel"
 #define MyAppExeName "baihu-tray.exe"
 
 #ifndef MyAppVersion

@@ -144,7 +144,7 @@ const filteredStats = computed(() => {
 
 # 镜像下载量统计
 
-本页面展示 GitHub Container Registry 上白虎面板（`ghcr.io/engigu/baihu`）各版本镜像的 Pull（下载）数量统计。数据在文档部署时自动更新。
+本页面展示 GitHub Container Registry 上白虎面板（`ghcr.io/uyloal/baihu`）各版本镜像的 Pull（下载）数量统计。数据在文档部署时自动更新。
 
 <div class="update-time-box">
   <span>数据更新时间：</span>

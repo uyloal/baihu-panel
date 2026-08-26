@@ -25,7 +25,7 @@ onMounted(loadAbout)
       <div class="flex-1 min-w-0 w-full">
         <div class="flex items-start justify-between mb-1.5 gap-4">
           <h3 class="text-xl font-bold">白虎面板 (Baihu Panel)</h3>
-          <a href="https://engigu.github.io/baihu-panel/guide/changelog.html" target="_blank"
+          <a href="https://uyloal.github.io/baihu-panel/guide/changelog.html" target="_blank"
             class="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-primary/20 bg-primary/5 text-primary text-[10px] sm:text-xs font-semibold hover:bg-primary/10 transition-all whitespace-nowrap shadow-sm">
             <History class="h-3 w-3" />
             更新日志
@@ -33,7 +33,7 @@ onMounted(loadAbout)
         </div>
         <p class="text-sm text-muted-foreground leading-relaxed">极致轻量、高性能的自动化任务调度平台。深度集成 Mise 运行时管理，支持多语言环境动态切换与全自动依赖管理。</p>
       </div>
-      <a href="https://engigu.github.io/baihu-panel/guide/changelog.html" target="_blank"
+      <a href="https://uyloal.github.io/baihu-panel/guide/changelog.html" target="_blank"
         class="hidden lg:inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-all whitespace-nowrap shadow-sm shadow-primary/5">
         <History class="h-3.5 w-3.5" />
         查看更新日志
@@ -116,7 +116,7 @@ onMounted(loadAbout)
     <div class="mt-6 pt-4 border-t flex items-center justify-center gap-2 text-[10px] sm:text-sm text-muted-foreground whitespace-nowrap overflow-hidden">
       <span>© 2025 - Present 保留所有权利。</span>
       <span class="opacity-20">|</span>
-      <a href="https://github.com/engigu/baihu-panel/" target="_blank"
+      <a href="https://github.com/uyloal/baihu-panel/" target="_blank"
         class="inline-flex items-center gap-1 text-primary hover:underline">
         <ExternalLink class="h-3 w-3" />
         GitHub

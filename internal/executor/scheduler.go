@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 // safeBuffer 一个线程安全的字节缓冲区，用于合并 stdout 和 stderr

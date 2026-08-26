@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/cache"
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/eventbus"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/uyloal/baihu-panel/internal/cache"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/eventbus"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/systime"
 	"github.com/rs/xid"
 	"gorm.io/gorm"
 )

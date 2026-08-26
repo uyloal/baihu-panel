@@ -420,7 +420,7 @@ version: '3.8'
 
 services:
   baihu-minimal:
-    image: engigu/baihu-minimal:latest
+    image: uyloal/baihu-minimal:latest
     container_name: baihu-minimal
     restart: unless-stopped
     ports:

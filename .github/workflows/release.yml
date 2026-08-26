@@ -38,7 +38,7 @@ jobs:
         run: |
           VERSION=${{ github.ref_name }}
           BUILD_TIME=$(TZ='Asia/Shanghai' date '+%Y/%m/%d %H:%M:%S')
-          LDFLAGS="-s -w -X 'github.com/engigu/baihu-panel/internal/constant.Version=$VERSION' -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=$BUILD_TIME'"
+          LDFLAGS="-s -w -X 'github.com/uyloal/baihu-panel/internal/constant.Version=$VERSION' -X 'github.com/uyloal/baihu-panel/internal/constant.BuildTime=$BUILD_TIME'"
           
           # Prepare static assets for embedding
           rm -rf internal/static/dist

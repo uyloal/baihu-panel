@@ -1,7 +1,7 @@
 package vo
 
 import (
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 // ScriptVO 脚本视图对象

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/engigu/baihu-panel/internal/windows"
+	"github.com/uyloal/baihu-panel/internal/windows"
 )
 
 var (

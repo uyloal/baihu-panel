@@ -71,7 +71,7 @@ const webuiRef = ref<any>(null)
             <div class="space-y-1.5 flex-1 min-w-0">
               <CardTitle class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <span>自定义前端包 (WebUI)</span>
-                <a href="https://engigu.github.io/baihu-panel/guide/webui" target="_blank" class="flex items-center gap-1 text-xs text-blue-600 hover:underline font-normal shrink-0">
+                <a href="https://uyloal.github.io/baihu-panel/guide/webui" target="_blank" class="flex items-center gap-1 text-xs text-blue-600 hover:underline font-normal shrink-0">
                   开发文档
                   <ExternalLink class="w-3 h-3 shrink-0" />
                 </a>

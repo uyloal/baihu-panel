@@ -21,4 +21,4 @@ baihu-panel（Baihu Panel）及其开发者在提供本项目的同时，默认�
 
 ## 4. 联系我们
 
-如果您在使用过程中发现任何技术问题，欢迎通过 GitHub [Issues](https://github.com/engigu/baihu-panel/issues) 反馈。
+如果您在使用过程中发现任何技术问题，欢迎通过 GitHub [Issues](https://github.com/uyloal/baihu-panel/issues) 反馈。

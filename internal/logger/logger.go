@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/uyloal/baihu-panel/internal/systime"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

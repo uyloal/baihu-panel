@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 // ParseManifest 根据语言解析依赖清单文件内容

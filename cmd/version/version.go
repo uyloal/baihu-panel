@@ -3,7 +3,7 @@ package version
 import (
 	"fmt"
 
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 func Run(args []string) {

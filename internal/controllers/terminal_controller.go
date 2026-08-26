@@ -11,10 +11,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/utils"
-	"github.com/engigu/baihu-panel/internal/windows"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/windows"
 
 	"github.com/creack/pty"
 	"github.com/gin-gonic/gin"

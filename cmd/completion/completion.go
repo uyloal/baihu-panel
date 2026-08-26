@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // Run 处理 baihu completion 命令

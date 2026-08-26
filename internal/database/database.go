@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/systime"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"

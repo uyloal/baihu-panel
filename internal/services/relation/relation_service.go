@@ -3,8 +3,8 @@ package relation
 import (
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/models"
 	"github.com/rs/xid"
 )
 

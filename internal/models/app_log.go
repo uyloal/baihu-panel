@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // AppLog 统一应用日志与通知记录

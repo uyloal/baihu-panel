@@ -3,8 +3,8 @@ package deps
 import (
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 type GoManager struct {

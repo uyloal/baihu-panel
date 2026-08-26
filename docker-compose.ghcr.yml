@@ -2,7 +2,7 @@
 
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"

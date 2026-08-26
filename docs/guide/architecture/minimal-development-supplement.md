@@ -751,7 +751,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/executor"
+	"github.com/uyloal/baihu-panel/internal/executor"
 )
 
 func TestExecutor_TimeoutTermination(t *testing.T) {
@@ -824,7 +824,7 @@ flowchart TD
 ```yaml
 services:
   baihu-minimal:
-    image: engigu/baihu-minimal:latest
+    image: uyloal/baihu-minimal:latest
     environment:
       # 1. 配置 pnpm 国内加速镜像源
       - NPM_CONFIG_REGISTRY=https://registry.npmmirror.com

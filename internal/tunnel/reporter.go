@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/executor"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/executor"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/services"
 	"github.com/robfig/cron/v3"
 )
 
@@ -23,7 +23,7 @@ import (
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 var (
 	reporterCronID      cron.EntryID

@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/logger"
 )
 
 // VerifyPwsh checks if pwsh.exe is installed on Windows.

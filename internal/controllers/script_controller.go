@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"github.com/engigu/baihu-panel/internal/models/vo"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/models/vo"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

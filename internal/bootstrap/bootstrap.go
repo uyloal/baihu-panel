@@ -7,15 +7,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/executor"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/router"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/tunnel"
-	"github.com/engigu/baihu-panel/internal/utils"
-	"github.com/engigu/baihu-panel/internal/windows"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/executor"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/router"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/tunnel"
+	"github.com/uyloal/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/windows"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,7 +62,7 @@ func InitBasic() *App {
 		app.initConfigWithPath("")
 		app.initDatabase()
 		
-		logger.Infof("[System] 低于1.0.11版本升级最新版本错误指引: https://github.com/engigu/baihu-panel/issues/64")
+		logger.Infof("[System] 低于1.0.11版本升级最新版本错误指引: https://github.com/uyloal/baihu-panel/issues/64")
 		globalApp = app
 	})
 	return globalApp

@@ -15,7 +15,7 @@ hero:
       link: /guide/introduction
     - theme: alt
       text: 查看源码
-      link: https://github.com/engigu/baihu-panel
+      link: https://github.com/uyloal/baihu-panel
 
 features:
   - title: 极致轻量

@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/creack/pty"
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/logger"
-	"github.com/engigu/baihu-panel/internal/utils"
-	"github.com/engigu/baihu-panel/internal/windows"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/logger"
+	"github.com/uyloal/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/windows"
 )
 
 // Task 任务基础接口

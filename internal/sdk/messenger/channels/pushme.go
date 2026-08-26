@@ -1,6 +1,6 @@
 package channels
 
-import "github.com/engigu/baihu-panel/internal/sdk/message"
+import "github.com/uyloal/baihu-panel/internal/sdk/message"
 
 // Copyright (c) 2026 engigu (Baihu Panel). All rights reserved.
 // Use of this source code is governed by the Apache License 2.0.
@@ -11,7 +11,7 @@ import "github.com/engigu/baihu-panel/internal/sdk/message"
 // 并在您的衍生作品、文档、软件关于页面或说明文件中显式声明引用自白虎面板（Baihu Panel）。
 // 
 // Anyone referencing, porting, modifying, or redistributing this code must retain this 
-// copyright notice and explicitly state the source: Baihu Panel (github.com/engigu/baihu-panel).
+// copyright notice and explicitly state the source: Baihu Panel (github.com/uyloal/baihu-panel).
 
 
 type PushMeChannel struct{ *BaseChannel }

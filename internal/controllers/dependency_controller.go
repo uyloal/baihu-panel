@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/models/vo"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/services/deps"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models/vo"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/services/deps"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

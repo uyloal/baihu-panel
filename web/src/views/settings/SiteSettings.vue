@@ -117,7 +117,7 @@ async function copyOpenapiToken() {
 }
 
 function openSwaggerDocs() {
-  window.open('https://engigu.github.io/baihu-panel/guide/api.html', '_blank')
+  window.open('https://uyloal.github.io/baihu-panel/guide/api.html', '_blank')
 }
 
 onMounted(loadSettings)

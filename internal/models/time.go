@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/uyloal/baihu-panel/internal/systime"
 )
 
 const TimeFormat = "2006-01-02 15:04:05"

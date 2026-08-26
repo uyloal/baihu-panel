@@ -1,7 +1,7 @@
 package deps
 
 import (
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 type PerlManager struct {

@@ -4,9 +4,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/controllers"
-	"github.com/engigu/baihu-panel/internal/middleware"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/controllers"
+	"github.com/uyloal/baihu-panel/internal/middleware"
+	"github.com/uyloal/baihu-panel/internal/services"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"

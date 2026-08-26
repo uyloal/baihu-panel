@@ -13,9 +13,9 @@
 - **Web 编译与构建修复 (Fix)**：移除 Web 端未使用的 `ShieldAlert` 导入以解决 TypeScript 严格类型检查下的打包编译报错。
 
 ### 2026.08.17 - 通知内容统一与 Options SDK 支持、SSE 实时流状态帧协议、日志全屏删除修复与 Go 1.26 升级 (v1.1.26)
-- **通知消息统一与 Options SDK (New)**：后端重构了通知结构体字段为 `content`（同时兼容旧版 `text`）并引入 `format` 格式参数（`text`/`markdown`/`html`）（[#161](https://github.com/engigu/baihu-panel/pull/161)）；Node.js 及 Python 内置 SDK 均统一采用 Options 模式（`notify(title, content, options)`），支持多渠道筛选和渲染格式，并完全向下兼容。
+- **通知消息统一与 Options SDK (New)**：后端重构了通知结构体字段为 `content`（同时兼容旧版 `text`）并引入 `format` 格式参数（`text`/`markdown`/`html`）（[#161](https://github.com/uyloal/baihu-panel/pull/161)）；Node.js 及 Python 内置 SDK 均统一采用 Options 模式（`notify(title, content, options)`），支持多渠道筛选和渲染格式，并完全向下兼容。
 - **日志 SSE Stream-as-State 协议 (New)**：重构了任务实时日志流通信协议，采用结构化 `finish` 帧实现日志流与任务状态在前端的实时联动同步，修复了历史执行状态不同步和高频并发下的通信延迟。
-- **历史日志全屏删除修复 (Fix)**：修复了执行历史中全屏日志查看弹窗（`LogViewer.vue`）未向父组件透传 `@delete` 事件导致删除历史日志不生效的问题（[#157](https://github.com/engigu/baihu-panel/issues/157)）。
+- **历史日志全屏删除修复 (Fix)**：修复了执行历史中全屏日志查看弹窗（`LogViewer.vue`）未向父组件透传 `@delete` 事件导致删除历史日志不生效的问题（[#157](https://github.com/uyloal/baihu-panel/issues/157)）。
 - **调度器与日志稳定性优化 (Fix)**：修复了取消订阅日志流时双重关闭 channel 导致的 panic 隐患；对 cron 触发读取 scheduler 指针增加读锁保护；优化了配置重载时的锁粒度防止潜在死锁。
 - **运行时环境与依赖升级**：全面升级 Go 版本至 1.26，并将两步验证 (`otp`) 升级为直接依赖。
 

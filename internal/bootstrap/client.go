@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/services"
 )
 
 // SendInternalRequest 向常驻后台主服务安全发送内部通信请求

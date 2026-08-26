@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // AgentSchedulerConfig Agent 调度器配置

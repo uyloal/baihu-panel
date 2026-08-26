@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // NodeMetrics 表示互联节点的性能指标，使用 JSON 存储

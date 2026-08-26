@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
+	"github.com/uyloal/baihu-panel/internal/bootstrap"
 )
 
 // CallInternalAPI 封装底层进程间 HTTP 通信，统一处理网络连接错误及业务级异常提取

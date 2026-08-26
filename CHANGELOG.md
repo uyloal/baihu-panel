@@ -12,10 +12,10 @@
 * **小屏任务页面及细节展示优化 (Fix)**：优化移动端各卡片内部间距与图标对齐；修复了窄屏下任务工具栏新建/批量删除等动作按钮溢出被截断问题；解决了超长任务名称在日志详情侧边栏内导致的排版重叠和布局挤压。
 * **Web 编译与构建修复 (Fix)**：清除了 Web 前端多余未使用的 `ShieldAlert` 图标引用，彻底解决因 TS 类型检查严格而导致的构建打包失败报错。
 
-> 💡 **提示**：出于安全及环境隔离考虑，推荐使用 Docker/Compose 部署方式。[镜像地址](https://github.com/engigu/baihu-panel/pkgs/container/baihu)
+> 💡 **提示**：出于安全及环境隔离考虑，推荐使用 Docker/Compose 部署方式。[镜像地址](https://github.com/uyloal/baihu-panel/pkgs/container/baihu)
 
 ### 🐳 方式一：Docker 部署 (推荐)
-[部署文档](https://github.com/engigu/baihu-panel?tab=readme-ov-file#%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2)
+[部署文档](https://github.com/uyloal/baihu-panel?tab=readme-ov-file#%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2)
 
 ---
 

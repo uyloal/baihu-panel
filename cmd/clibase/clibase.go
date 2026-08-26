@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/bootstrap"
+	"github.com/uyloal/baihu-panel/internal/services"
 )
 
 // InitContext 统一封装命令行所需的初始化上下文逻辑

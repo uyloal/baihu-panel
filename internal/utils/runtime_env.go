@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // BuildRuntimeProcessEnv 构造 Baihu 内部可信子进程需要继承的运行时环境变量。

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/constant"
 )
 
 // NotifyFilter 通知匹配/过滤规则表

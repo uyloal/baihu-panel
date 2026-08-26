@@ -12,15 +12,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/database"
-	"github.com/engigu/baihu-panel/internal/eventbus"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/models/vo"
-	"github.com/engigu/baihu-panel/internal/services"
-	"github.com/engigu/baihu-panel/internal/services/tasks"
-	"github.com/engigu/baihu-panel/internal/tunnel"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/database"
+	"github.com/uyloal/baihu-panel/internal/eventbus"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models/vo"
+	"github.com/uyloal/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/internal/services/tasks"
+	"github.com/uyloal/baihu-panel/internal/tunnel"
+	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shirou/gopsutil/v3/process"
@@ -365,7 +365,7 @@ func (sc *SettingsController) GetAbout(c *gin.Context) {
 	// 获取远程最新版本
 	remoteVersion := ""
 	client := &http.Client{Timeout: 2 * time.Second}
-	req, err := http.NewRequest("GET", "https://api.github.com/repos/engigu/baihu-panel/releases/latest", nil)
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/uyloal/baihu-panel/releases/latest", nil)
 	if err == nil {
 		req.Header.Set("User-Agent", "baihu-panel")
 		if resp, err := client.Do(req); err == nil {

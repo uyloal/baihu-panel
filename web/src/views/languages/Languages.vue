@@ -191,7 +191,7 @@ onMounted(() => {
                         </span>
                         <span class="text-blue-600/80 dark:text-blue-400/80">
                             如果需要安装 apt 系统级底层依赖 (如 C++编译库、无头浏览器动态库等)，请参考 
-                            <a href="https://engigu.github.io/baihu-panel/guide/examples/linux-deps.html" target="_blank" class="underline hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                            <a href="https://uyloal.github.io/baihu-panel/guide/examples/linux-deps.html" target="_blank" class="underline hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
                                 Linux 系统依赖处理
                             </a>
                         </span>

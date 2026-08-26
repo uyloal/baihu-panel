@@ -71,7 +71,7 @@ services:
       retries: 3
 
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     restart: unless-stopped
     ports:

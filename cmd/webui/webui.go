@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/engigu/baihu-panel/cmd/clibase"
-	"github.com/engigu/baihu-panel/internal/services"
+	"github.com/uyloal/baihu-panel/cmd/clibase"
+	"github.com/uyloal/baihu-panel/internal/services"
 )
 
 func printMainHelp() {

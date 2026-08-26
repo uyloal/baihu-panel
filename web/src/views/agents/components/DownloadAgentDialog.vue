@@ -41,7 +41,7 @@ defineExpose({ openDialog })
           <p class="font-medium mb-1">💡 下载说明：</p>
           <ul class="list-disc list-inside space-y-1 text-xs opacity-90">
             <li>若主程序为 <strong class="font-semibold">Docker 部署</strong>：支持直接在此处下载包含配置的自动打包程序。</li>
-            <li>若主程序为 <strong class="font-semibold">单文件二进制部署</strong>：面板无法直接提供完整打包下载，请前往 <a href="https://github.com/engigu/baihu-panel/releases" target="_blank" class="underline font-medium hover:text-blue-500 transition-colors">GitHub Releases</a> 手动下载对应的 Agent。</li>
+            <li>若主程序为 <strong class="font-semibold">单文件二进制部署</strong>：面板无法直接提供完整打包下载，请前往 <a href="https://github.com/uyloal/baihu-panel/releases" target="_blank" class="underline font-medium hover:text-blue-500 transition-colors">GitHub Releases</a> 手动下载对应的 Agent。</li>
           </ul>
         </div>
         <div class="space-y-2">

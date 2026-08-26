@@ -41,7 +41,7 @@ docker run -d \
   -e BH_DB_PATH=/app/data/baihu.db \
   -e BH_DB_TABLE_PREFIX=baihu_ \
   --restart unless-stopped \
-  ghcr.io/engigu/baihu:latest
+  ghcr.io/uyloal/baihu:latest
 ```
 
 ### MySQL
@@ -62,7 +62,7 @@ docker run -d \
   -e BH_DB_NAME=baihu \
   -e BH_DB_TABLE_PREFIX=baihu_ \
   --restart unless-stopped \
-  ghcr.io/engigu/baihu:latest
+  ghcr.io/uyloal/baihu:latest
 ```
 
 ---
@@ -75,7 +75,7 @@ docker run -d \
 ```yaml
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     ports:
       - "8052:8052"
@@ -161,7 +161,7 @@ docker run -d \
 ```yaml
 services:
   baihu:
-    image: ghcr.io/engigu/baihu:latest
+    image: ghcr.io/uyloal/baihu:latest
     container_name: baihu
     # ... 省略端口、挂载等其他配置 ...
     

@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/models"
 )
 
 // StandardStrategy 实现默认的解析逻辑

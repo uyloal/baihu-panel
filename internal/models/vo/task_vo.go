@@ -1,9 +1,9 @@
 package vo
 
 import (
-	"github.com/engigu/baihu-panel/internal/executor"
-	"github.com/engigu/baihu-panel/internal/models"
-	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/uyloal/baihu-panel/internal/executor"
+	"github.com/uyloal/baihu-panel/internal/models"
+	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 // TaskCreateReq 任务创建请求
