@@ -64,6 +64,17 @@ export default defineConfig({
                 ]
             },
             {
+                text: '技术架构与演进',
+                items: [
+                    { text: 'Node 管理现状分析', link: '/guide/architecture/node-current-analysis' },
+                    { text: 'Node ESM 专项研究', link: '/guide/architecture/node-esm-research' },
+                    { text: '现代 Node 全景调研', link: '/guide/architecture/node-modern-landscape' },
+                    { text: 'Minimal 现代化改造方案', link: '/guide/architecture/node-modernization-plan' },
+                    { text: 'Minimal 开发指南', link: '/guide/architecture/minimal-development-guideline' },
+                    { text: 'Minimal 开发深度规范', link: '/guide/architecture/minimal-development-supplement' }
+                ]
+            },
+            {
                 text: '其他',
                 items: [
                     { text: '镜像下载量', link: '/guide/package-stats' },
