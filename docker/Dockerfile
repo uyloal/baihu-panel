@@ -5,10 +5,12 @@ FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend-builder
 
 WORKDIR /app/web
 
+ENV CI=true
+
 RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
 
 # Copy package files
-COPY web/package*.json web/pnpm-lock.yaml* ./
+COPY web/package*.json web/pnpm-lock.yaml* web/pnpm-workspace.yaml* web/.npmrc* ./
 
 # Install frontend dependencies
 RUN pnpm install --frozen-lockfile=false
@@ -36,7 +38,7 @@ RUN VERSION_VAL="${VERSION:-dev-$(TZ=Asia/Shanghai date '+%Y%m%d%H%M%S')}" && \
 # ================================
 # Stage 2: Build backend
 # ================================
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS backend-builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS backend-builder
 
 ARG TARGETOS
 ARG TARGETARCH

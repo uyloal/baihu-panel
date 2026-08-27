@@ -71,25 +71,5 @@
     "@rollup/rollup-linux-x64-gnu": "^4.62.5",
     "@esbuild/linux-arm64": "^0.28.1",
     "@esbuild/linux-x64": "^0.28.1"
-  },
-  "pnpm": {
-    "supportedArchitectures": {
-      "os": [
-        "current",
-        "linux",
-        "darwin",
-        "win32"
-      ],
-      "cpu": [
-        "current",
-        "x64",
-        "arm64"
-      ],
-      "libc": [
-        "current",
-        "musl",
-        "glibc"
-      ]
-    }
   }
 }
