@@ -82,10 +82,21 @@ jobs:
 
   deploy:
     needs: build-and-push
-    if: ${{ secrets.DEPLOY_HOST != '' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
+      - name: Check deployment configuration
+        id: check_secrets
+        run: |
+          if [ -n "${{ secrets.DEPLOY_HOST }}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "DEPLOY_HOST secret is not configured, skipping remote deployment."
+          fi
+
       - name: Deploy to Server via SSH
+        if: steps.check_secrets.outputs.enabled == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -106,3 +117,4 @@ jobs:
                 docker compose up -d
               fi
             fi
+
