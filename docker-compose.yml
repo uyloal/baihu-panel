@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+    container_name: baihu
     ports:
       - "8052:8052"
     volumes:
@@ -10,9 +11,11 @@ services:
       - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
-      # 以下环境变量可覆盖配置文件（可选）
+      # 以下环境变量可选（开箱即用 SQLite，如需自定义可取消注释）：
       # - BH_SERVER_PORT=8052
       # - BH_SERVER_HOST=0.0.0.0
+      # - BH_SERVER_URL_PREFIX=/baihu  # 可选：反向代理子路径
+      # - BAIHU_SECRET_KEY=your_secret_key_for_secrets  # 机密数据加密秘钥 (建议配置)
       # - BH_DB_TYPE=mysql
       # - BH_DB_HOST=localhost
       # - BH_DB_PORT=3306
@@ -20,5 +23,9 @@ services:
       # - BH_DB_PASSWORD=password
       # - BH_DB_NAME=baihu
       # - BH_DB_TABLE_PREFIX=baihu_
-      # - BH_SECRET=your_secret_key
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped

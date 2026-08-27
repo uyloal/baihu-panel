@@ -1,20 +1,19 @@
 # 白虎面板
 
-> **本仓库 Fork 自 [engigu/baihu-panel](https://github.com/engigu/baihu-panel)**，用于个人私有化维护，上游源码及更新日志请访问原仓库。
+> **本仓库 Fork 自 [engigu/baihu-panel](https://github.com/engigu/baihu-panel)**，专为自建私有化单一镜像服务定制与维护，开箱即用。
 
 ## 特色
 
-- **轻量级：** docker/compose部署，无需复杂配置，开箱即用
-- **任务调度：** 支持标准 Cron 表达式，常用时间规则快捷选择。日志不落文件，没有磁盘频繁io的问题
-- **脚本管理：** 在线代码编辑器，支持文件上传、压缩包解压
+- **极简单一镜像：** 基于 Node.js 24 LTS + Alpine，内置 Go 核心与完整 WebUI，支持 `linux/amd64` 与 `linux/arm64` 双架构
+- **开箱即用：** 单一 Compose 文件或一行 `docker run` 即可启动，数据与依赖自包含持久化在 `./data`
+- **任务调度：** 支持标准 Cron 表达式，常用时间规则快捷选择，内存实时日志流
+- **脚本管理：** 在线 Monaco 代码编辑器，支持文件上传、压缩包解压与多文件批量管理
 - **在线终端：** WebSocket 实时终端，命令执行结果实时输出
-- **消息推送：** 内置强大消息推送与通知引擎，无缝兼容主流渠道，支持系统级事件告警
-- **机密管理：** **(New)** 类似 GitHub Secrets 的安全存储，支持 AES-GCM 加密，日志自动打码，仅在调度时注入
-- **环境变量：** 存储普通配置，任务执行时自动注入
-- **现代UI：** 响应式设计，深色/浅色主题切换
-- **移动端：** 适配移动小屏样式
-- **现代运行时：** 基于 Node.js 24 LTS + Alpine 极简架构，原生支持 JavaScript / TypeScript（零编译直接执行）
-- **内建助手库：** **(New)** 为 Node.js/TS 提供零配置助手库 `@baihu`，简单 import 即可实现一键推信与任务交互，无需手动管理 API Token 和 URL
+- **消息推送：** 原生内置主流通知渠道（钉钉、企业微信、Telegram、Server酱等），支持系统级事件告警
+- **机密管理：** 类似 GitHub Secrets 的安全存储，支持 AES-GCM 加密，日志自动打码
+- **现代运行时：** 原生支持 JavaScript / TypeScript（Node.js 24 零编译直接执行）与 Shell 脚本
+- **内建助手库：** 提供零配置 `@baihu` 助手库，简单 import 即可实现一键推信与任务交互
+
 
 ## 功能特性 
 
@@ -670,17 +669,13 @@ location /baihu/ {
 2. **安全责任自负**：本项目作为基础调度工具，**无法且不保证任何被执行任务的安全性**。因运行不安全、违规脚本带来的一切数据泄露、系统损坏、财产损失及法律责任等后果，均由使用者自行承担，与本项目及开发者无关。
 3. **软件按“原样”提供**：本项目为业余开源开发，按“原样”提供，**不保证不存在 Bug 或漏洞**。开发者不对因使用本项目而引起的任何直接或间接损失负责。
 
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
 ## 鸣谢
 
-- Windows 安装包的简体中文语言包使用了由 [Zhenghan Yang (Kira)](https://github.com/kira-96) 维护的开源项目 [Inno-Setup-Chinese-Simplified-Translation](https://github.com/kira-96/Inno-Setup-Chinese-Simplified-Translation)，特此致谢。
+- 感谢原项目 [engigu/baihu-panel](https://github.com/engigu/baihu-panel) 及其贡献者们的开源付出。
 
 ## 许可证 
-
 
 本项目采用 [Apache License 2.0](LICENSE) 协议发布，并包含额外的 [NOTICE](NOTICE) 说明。
 
 **强制要求：** 在任何分发、修改或二次开发中，**必须完整保留原作者署名及项目名称**（详见 NOTICE 文件）。
+
