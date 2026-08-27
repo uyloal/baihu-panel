@@ -557,19 +557,48 @@ func (tc *TerminalController) buildTerminalEnv(userID string, extraEnvs ...strin
 		env = append(env, envVars...)
 	}
 
-	// 为 Docker 环境或二进制版本注入所有 mise 已安装 Node 的全局依赖路径到 NODE_PATH (Issue-90)
-	if !utils.IsInDocker() || (!strings.Contains(os.Args[0], "go-build") && !strings.Contains(os.Args[0], "tmp")) {
-		versions, _ := utils.ListMiseInstalledVersions("node")
-		var nodePaths []string
-		for _, v := range versions {
-			if p := utils.GetMiseNodePath(v); p != "" {
-				nodePaths = append(nodePaths, p)
+	// 自动注入 OpenAPI Token 与 Notify Token（如果已配置且启用）
+	settingsService := services.NewSettingsService()
+	tokenJson := settingsService.Get(constant.SectionSite, constant.KeyOpenapiToken)
+	if tokenJson != "" {
+		var tokenConfig struct {
+			Token   string `json:"token"`
+			Enabled bool   `json:"enabled"`
+		}
+		if err := json.Unmarshal([]byte(tokenJson), &tokenConfig); err == nil && tokenConfig.Enabled && tokenConfig.Token != "" {
+			hasToken := false
+			for _, e := range env {
+				if strings.HasPrefix(e, "BHPKG_OPENAPI_TOKEN=") || strings.HasPrefix(e, "OPENAPI_TOKEN=") {
+					hasToken = true
+					break
+				}
+			}
+			if !hasToken {
+				env = append(env, "BHPKG_OPENAPI_TOKEN="+tokenConfig.Token)
 			}
 		}
-		if len(nodePaths) > 0 {
-			sep := windows.GetPathSeparator()
-			env = append(env, "NODE_PATH="+strings.Join(nodePaths, sep))
+	}
+
+	notifyToken := settingsService.Get(constant.SectionNotify, constant.KeyNotifyToken)
+	if notifyToken != "" {
+		hasNotify := false
+		for _, e := range env {
+			if strings.HasPrefix(e, "BHPKG_NOTIFY_TOKEN=") {
+				hasNotify = true
+				break
+			}
 		}
+		if !hasNotify {
+			env = append(env, "BHPKG_NOTIFY_TOKEN="+notifyToken)
+		}
+	}
+
+	// 注入 Node.js 相关运行时默认参数
+	env = append(env,
+		"NODE_NO_WARNINGS=1",
+	)
+	if absNodeModules, err := filepath.Abs(filepath.Join(constant.ScriptsWorkDir, "node_modules")); err == nil {
+		env = append(env, "NODE_PATH="+absNodeModules)
 	}
 
 	return env

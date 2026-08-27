@@ -6,8 +6,8 @@ import { api, type AboutInfo } from '@/api'
 
 const aboutInfo = ref<AboutInfo | null>(null)
 
-const techStack = ['Golang', 'Vue 3', 'TypeScript', 'Vite', 'Tailwind CSS', 'Shadcn/ui']
-const features = ['脚本管理', '定时任务', '多语言支持', '依赖管理', '在线终端', '执行日志', '环境变量', '消息推送', '容器部署', '备份恢复']
+const techStack = ['Golang', 'Node.js 24', 'pnpm', 'Vue 3', 'TypeScript', 'Vite', 'Tailwind CSS', 'Shadcn/ui']
+const features = ['脚本管理', '定时任务', 'Node.js/TS 运行', '依赖管理', '在线终端', '执行日志', '环境变量', '消息推送', '容器部署', '备份恢复']
 
 async function loadAbout() {
   try {
@@ -31,7 +31,7 @@ onMounted(loadAbout)
             更新日志
           </a>
         </div>
-        <p class="text-sm text-muted-foreground leading-relaxed">极致轻量、高性能的自动化任务调度平台。深度集成 Mise 运行时管理，支持多语言环境动态切换与全自动依赖管理。</p>
+        <p class="text-sm text-muted-foreground leading-relaxed">极致轻量、高性能的自动化任务调度平台。基于 Node.js 24 与 pnpm 原生架构，支持 JavaScript/TypeScript 零编译直接执行与全自动依赖管理。</p>
       </div>
       <a href="https://uyloal.github.io/baihu-panel/guide/changelog.html" target="_blank"
         class="hidden lg:inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-all whitespace-nowrap shadow-sm shadow-primary/5">

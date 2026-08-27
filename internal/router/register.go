@@ -22,19 +22,13 @@ func RegisterControllers() *Controllers {
 	envService := services.NewEnvService()
 	scriptService := services.NewScriptService()
 	sendStatsService := services.NewSendStatsService()
-	agentWSManager := services.GetAgentWSManager()
 	systemWSManager := services.GetSystemWSManager()
 
 	taskLogService := tasks.NewTaskLogService(sendStatsService)
-	// 创建任务执行服务（需要依赖注入）
 	notifyService := services.NewNotificationService()
 	appLogService := services.NewAppLogService()
-	interconnectService := services.NewInterconnectService()
 
-	// 清理 task 运行状态的任务可以直接由 executorService 承担或在此处通过 Database 直接清理
-	// 简单期间，我们使用一个新方法 tasks.CleanupRunningTasks() 或者让 executorService 启动时清理
-
-	executorService = tasks.NewExecutorService(taskService, taskLogService, agentWSManager, settingsService, envService)
+	executorService = tasks.NewExecutorService(taskService, taskLogService, settingsService, envService)
 	// 启动时清理残留的运行状态
 	_ = executorService.CleanupRunningTasks()
 
@@ -42,7 +36,7 @@ func RegisterControllers() *Controllers {
 	executorService.StartCron()
 
 	// 初始化所有关注系统总线的服务
-	setupEventHandlers(appLogService, notifyService, loginLogService, systemWSManager, executorService)
+	setupEventHandlers(appLogService, notifyService, loginLogService, systemWSManager)
 	startAppLogCleanup(appLogService)
 
 	taskController := controllers.NewTaskController(taskService, executorService)
@@ -62,14 +56,11 @@ func RegisterControllers() *Controllers {
 		Terminal:     controllers.NewTerminalController(envService),
 		Settings:     controllers.NewSettingsController(userService, loginLogService, executorService),
 		Dependency:   controllers.NewDependencyController(),
-		Agent:        controllers.NewAgentController(settingsService),
-		Mise:         controllers.NewMiseController(services.NewMiseService()),
 		Notification: controllers.NewNotificationController(),
 		AppLog:       controllers.NewAppLogController(),
 		SystemWS:     controllers.NewSystemWSController(),
 		WebUI:        controllers.NewWebUIController(services.NewWebUIService(settingsService)),
 		Monitor:      controllers.NewMonitorController(executorService),
-		Interconnect: controllers.NewInterconnectController(interconnectService),
 		Data:         controllers.NewDataController(taskController, envController),
 		Tag:          controllers.NewTagController(services.NewTagService()),
 	}

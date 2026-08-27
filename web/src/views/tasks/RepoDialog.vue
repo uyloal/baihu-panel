@@ -6,12 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
-import TaskLangConfig from './components/TaskLangConfig.vue'
-import { Globe, GitBranch, Shield, Zap, Download, AlertCircle, Terminal } from 'lucide-vue-next'
-import { api, type Task, type RepoConfig, type Agent } from '@/api'
+import { Globe, GitBranch, Shield, Zap, Download, Terminal } from 'lucide-vue-next'
+import { api, type Task, type RepoConfig } from '@/api'
 import { toast } from 'vue-sonner'
 import { cn } from '@/lib/utils'
 
@@ -34,8 +32,6 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
   'saved': []
 }>()
-
-
 
 const proxyOptions = [
   { label: '不使用代理', value: 'none' },
@@ -66,10 +62,6 @@ const repoConfig = ref<RepoConfig>({
   repo_dir_name: ''
 })
 
-const allAgents = ref<Agent[]>([])
-const selectedAgentId = ref<string>('local')
-
-
 const autoAddCron = computed({
   get: () => !!repoConfig.value.auto_add_cron,
   set: (val: boolean) => {
@@ -83,9 +75,6 @@ const pullQlConfig = computed({
     repoConfig.value.commenttotask = val ? 'true' : 'false'
   }
 })
-
-// === 语言环境相关 ===
-const selectedLangs = ref<{ name: string; version: string; availableVersions: string[] }[]>([])
 
 const showQlImportDialog = ref(false)
 const qlCommandInput = ref('')
@@ -114,13 +103,6 @@ function exportBaihuCommand() {
   if (form.value.pre_command) parts.push(`--pre-command "${form.value.pre_command}"`)
   if (form.value.post_command) parts.push(`--post-command "${form.value.post_command}"`)
   if (form.value.timeout !== undefined && form.value.timeout !== 30) parts.push(`--task-timeout ${form.value.timeout}`)
-  
-  if (selectedLangs.value.length > 0) {
-    const langs = selectedLangs.value.filter(l => l.name).map(l => ({ name: l.name, version: l.version }))
-    if (langs.length > 0) {
-      parts.push(`--task-langs '${JSON.stringify(langs)}'`)
-    }
-  }
 
   const cmd = parts.join(' ')
   copyToClipboard(cmd).then((success) => {
@@ -144,23 +126,14 @@ function submitBaihuImport() {
     return
   }
 
-  // 应用解析结果
   repoConfig.value = { ...repoConfig.value, ...result.repoConfig }
   if (result.task.name) form.value.name = result.task.name
   if (result.task.timeout) form.value.timeout = result.task.timeout
   if (result.task.pre_command) form.value.pre_command = result.task.pre_command
   if (result.task.post_command) form.value.post_command = result.task.post_command
-  
-  if (result.task.languages) {
-    selectedLangs.value = result.task.languages.map(l => ({
-      name: l.name || '',
-      version: l.version || '',
-      availableVersions: []
-    }))
-  }
 
-  // toast.success('命令解析成功，已自动填充表单')
   showBaihuImportDialog.value = false
+  toast.success('Baihu 命令参数已自动填充')
 }
 
 function importFromQl() {
@@ -174,29 +147,17 @@ function submitQlImport() {
     if (!qlCommandInput.value.trim()) {
       showQlImportDialog.value = false
     } else {
-      toast.error('无效的指令：必须以 ql repo 开头')
+      toast.error('未识别到有效的 ql repo 参数')
     }
     return
   }
 
-  // 应用解析结果
   repoConfig.value = { ...repoConfig.value, ...result.repoConfig }
   if (result.task.name) form.value.name = result.task.name
 
-  toast.success('指令解析成功，已开启自动添加任务，请继续完善其他设置')
   showQlImportDialog.value = false
+  toast.success('青龙命令已成功转换为 Baihu 仓库配置')
 }
-
-
-
-
-
-const isSingleFile = computed({
-  get: () => !!repoConfig.value.single_file,
-  set: (val: boolean) => {
-    repoConfig.value.single_file = val
-  }
-})
 
 watch(() => props.open, async (val: boolean) => {
   if (val) {
@@ -206,78 +167,62 @@ watch(() => props.open, async (val: boolean) => {
       random_range: props.task?.random_range ?? 0,
       timeout: props.task?.timeout ?? 30,
       pin_type: props.task?.pin_type ?? 'none',
-      pre_command: props.task?.pre_command ?? '',
-      post_command: props.task?.post_command ?? '',
+      type: 'repo',
+      trigger_type: 'cron',
       ...props.task
     }
-
-    // 解析仓库配置
-    // 解析仓库配置
-    const defaultConfig: RepoConfig = {
-      source_type: 'git',
-      source_url: '',
-      target_path: '',
-      branch: '',
-      sparse_path: '',
-      single_file: false,
-      proxy: 'none',
-      proxy_url: '',
-      auth_token: '',
-      whitelist_paths: '',
-      blacklist: '',
-      dependence: '',
-      extensions: '',
-      auto_add_cron: false,
-      commenttotask: 'false',
-      concurrency: 1,
-      repo_source: '',
-      repo_dir_name: ''
-    }
-    const configStr = props.task?.config
-    if (configStr) {
+    if (props.task?.config) {
       try {
-        const parsed = JSON.parse(configStr)
-        repoConfig.value = { ...defaultConfig, ...parsed }
+        const parsed = JSON.parse(props.task.config)
+        repoConfig.value = {
+          source_type: parsed.source_type || 'git',
+          source_url: parsed.source_url || '',
+          target_path: parsed.target_path || '',
+          branch: parsed.branch || '',
+          sparse_path: parsed.sparse_path || '',
+          single_file: !!parsed.single_file,
+          proxy: parsed.proxy || 'none',
+          proxy_url: parsed.proxy_url || '',
+          auth_token: parsed.auth_token || '',
+          whitelist_paths: parsed.whitelist_paths || '',
+          blacklist: parsed.blacklist || '',
+          dependence: parsed.dependence || '',
+          extensions: parsed.extensions || '',
+          auto_add_cron: parsed.auto_add_cron === true,
+          commenttotask: parsed.commenttotask === 'true' || parsed.commenttotask === true ? 'true' : 'false',
+          concurrency: parsed.concurrency ?? 1,
+          repo_source: parsed.repo_source || '',
+          repo_dir_name: parsed.repo_dir_name || ''
+        }
       } catch {
-        repoConfig.value = defaultConfig
+        repoConfig.value = {
+          source_type: 'git',
+          source_url: '',
+          target_path: '',
+          branch: '',
+          sparse_path: '',
+          single_file: false,
+          proxy_url: '',
+          auth_token: '',
+          whitelist_paths: '',
+          blacklist: '',
+          dependence: '',
+          extensions: '',
+          auto_add_cron: false,
+          commenttotask: 'false',
+          concurrency: 1,
+          repo_source: '',
+          proxy: 'none',
+          repo_dir_name: ''
+        }
       }
-    } else {
-      repoConfig.value = defaultConfig
     }
-    
-    // 解析语言环境
-    selectedLangs.value = []
-    if (props.task?.languages && Array.isArray(props.task.languages)) {
-      selectedLangs.value = props.task.languages.map((l: any) => ({
-        name: l.name || '',
-        version: l.version || '',
-        availableVersions: []
-      }))
-    }
-    
-    // 仓库任务暂时仅支持本地执行
-    selectedAgentId.value = 'local'
-    // 加载 Agent 列表
-    await loadAgents()
-    // 加载通知配置
+
     await notificationConfigRef.value?.loadConfig(props.isEdit ? props.task?.id : undefined)
   }
 })
 
-async function loadAgents() {
-  try {
-    allAgents.value = await api.agents.list()
-  } catch { /* ignore */ }
-}
-
 async function save() {
-  if (repoConfig.value.auto_add_cron) {
-    if (selectedLangs.value.length === 0 || !selectedLangs.value[0]?.name) {
-      toast.error('您开启了“自动添加任务”，请先至少添加并选择一个运行语言环境和版本')
-      return
-    }
-  }
-
   try {
     let existingConfig = {}
     if (form.value.config) {
@@ -288,15 +233,8 @@ async function save() {
       ...repoConfig.value
     }
 
-    // 保存语言环境
-    form.value.languages = selectedLangs.value.map((l: { name: string; version: string }) => ({
-      name: l.name,
-      version: l.version
-    }))
-
     form.value.config = JSON.stringify(configToSave)
     form.value.command = `[${repoConfig.value.source_type}] ${repoConfig.value.source_url}`
-    form.value.agent_id = selectedAgentId.value === 'local' ? null : selectedAgentId.value
     if (props.isEdit && form.value.id) {
       await api.tasks.update(form.value.id, form.value)
       await notificationConfigRef.value?.saveConfig(form.value.id)
@@ -310,7 +248,7 @@ async function save() {
     emit('saved')
   } catch (error: any) {
     toast.error('保存失败', {
-      description: error.response?.data?.error || error.response?.data?.message || error.message || '未知错误'
+      description: error.message || '未知错误'
     })
   }
 }
@@ -337,7 +275,7 @@ async function save() {
               </Button>
               <Button variant="outline" size="sm" @click="importFromQl" class="flex-1 sm:flex-initial h-8 gap-1.5 bg-muted/50 hover:bg-muted border-muted-foreground/20 text-muted-foreground px-3">
                 <Download class="w-3.5 h-3.5" />
-                <span class="text-xs">Qinlong格式导入</span>
+                <span class="text-xs">青龙格式导入</span>
               </Button>
               </template>
             </div>
@@ -355,98 +293,69 @@ async function save() {
 
               <div class="grid gap-4 pl-3 border-l border-muted">
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">任务名称</Label>
-                  <Input v-model="form.name" placeholder="输入同步任务名称" class="sm:col-span-3 h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" />
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">任务备注</Label>
-                  <Input v-model="form.remark" placeholder="输入同步任务备注" class="sm:col-span-3 h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" />
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">任务名称</Label>
+                  <Input v-model="form.name" placeholder="请输入直观的任务标识名称" class="sm:col-span-3 h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" />
                 </div>
 
-                <TaskTagsConfig v-model="form.tags" />
-              </div>
-            </section>
-
-            <!-- 仓库配置 Section -->
-            <section class="space-y-4">
-              <div class="flex items-center gap-2 mb-1">
-                <div class="h-4 w-1 bg-primary rounded-full" />
-                <h3 class="text-sm font-bold text-foreground">核心配置</h3>
-              </div>
-
-              <div class="grid gap-4 pl-3 border-l border-muted">
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">源类型</Label>
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">源类型</Label>
                   <div class="sm:col-span-3">
                     <Select :model-value="repoConfig.source_type" @update:model-value="(v: any) => repoConfig.source_type = String(v || 'git')">
                       <SelectTrigger class="h-9 bg-muted/30 border-muted-foreground/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="git">
-                          <div class="flex items-center gap-2">
-                            <GitBranch class="h-3.5 w-3.5" />
-                            <span>Git 仓库 (Repository)</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="url">
-                          <div class="flex items-center gap-2">
-                            <Globe class="h-3.5 w-3.5" />
-                            <span>URL 下载 (Direct Link)</span>
-                          </div>
-                        </SelectItem>
+                        <SelectItem value="git">Git 仓库 (默认)</SelectItem>
+                        <SelectItem value="url">URL 直链脚本文件</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">源地址</Label>
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">源地址</Label>
                   <div class="sm:col-span-3 relative">
-                    <Input v-model="repoConfig.source_url"
-                      :placeholder="repoConfig.source_type === 'git' ? 'https://github.com/user/repo.git' : 'https://example.com/file.js'"
-                      class="h-9 font-mono text-[13px] bg-muted/30 border-muted-foreground/20 focus:bg-background pr-10 transition-all" 
-                      autocomplete="off" />
+                    <Input v-model="repoConfig.source_url" placeholder="https://github.com/user/repo.git 或 raw 脚本直链" class="h-9 bg-muted/30 border-muted-foreground/20 pr-10 text-xs font-mono focus:bg-background transition-all" autocomplete="off" />
                     <Globe class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40" />
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">目标路径</Label>
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">目标路径</Label>
                   <div class="sm:col-span-3">
-                    <DirTreeSelect v-if="selectedAgentId === 'local'" :model-value="repoConfig.target_path || ''"
-                      @update:model-value="v => repoConfig.target_path = v" class="h-9" />
-                    <Input v-else v-model="repoConfig.target_path" placeholder="Agent 上的目标路径" class="h-9 bg-muted/30 border-muted-foreground/20" />
+                    <DirTreeSelect v-model="repoConfig.target_path" placeholder="默认为 scripts 根目录" class="h-9" />
                   </div>
                 </div>
 
-                <div v-if="repoConfig.source_type === 'git'" class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">目录名定制</Label>
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">自定义目录名</Label>
                   <div class="sm:col-span-3 relative">
-                    <Input v-model="repoConfig.repo_dir_name" placeholder="留空则默认为 username_reponame 拼接" class="h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
+                    <Input v-model="repoConfig.repo_dir_name" placeholder="留空时自动提取（如 my_custom_repo）" class="h-9 bg-muted/30 border-muted-foreground/20 text-xs focus:bg-background transition-all" autocomplete="off" />
+                    <p class="text-[10px] text-muted-foreground mt-1 px-1">仅对多文件仓库有效，用于显式覆盖克隆落地后的本地文件夹名称</p>
                   </div>
                 </div>
+
                 <div v-if="repoConfig.source_type === 'git'" class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">分支</Label>
-                  <Input v-model="repoConfig.branch" placeholder="main (默认)" class="sm:col-span-3 h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">分支名称</Label>
+                  <div class="sm:col-span-3 relative">
+                    <Input v-model="repoConfig.branch" placeholder="留空使用仓库默认分支 (如 master/main)" class="h-9 bg-muted/30 border-muted-foreground/20 text-xs focus:bg-background transition-all" autocomplete="off" />
+                    <GitBranch class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40" />
+                  </div>
                 </div>
 
                 <div v-if="repoConfig.source_type === 'git'" class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">稀疏路径</Label>
-                  <Input v-model="repoConfig.sparse_path" placeholder="指定目录或文件 (可选)" class="sm:col-span-3 h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">部分检出</Label>
+                  <Input v-model="repoConfig.sparse_path" placeholder="仅拉取仓库子目录或特定文件 (可选，如: src/scripts)" class="sm:col-span-3 h-9 bg-muted/30 text-xs border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
                 </div>
 
-                <div v-if="repoConfig.source_type === 'git' && repoConfig.sparse_path" class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">下载模式</Label>
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">任务标签</Label>
                   <div class="sm:col-span-3">
-                    <div class="flex items-center space-x-2 bg-muted/20 px-3 py-1.5 rounded-full border border-muted-foreground/10 w-fit">
-                      <Checkbox id="single-file-sync" v-model="isSingleFile" class="scale-90" />
-                      <Label for="single-file-sync" class="text-[11px] font-medium cursor-pointer">作为单文件直接下载</Label>
-                    </div>
+                    <TaskTagsConfig v-model="form.tags" />
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3 mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">前置脚本</Label>
                   <div class="sm:col-span-3 relative"><Input v-model="form.pre_command" placeholder="同步前运行的指令 (可选)" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50 pr-10', form.pre_command ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /><Zap class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40 pointer-events-none" /></div>
                 </div>
@@ -521,7 +430,7 @@ async function save() {
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">依赖文件</Label>
                   <div class="sm:col-span-3 relative">
-                    <Input v-model="repoConfig.dependence" placeholder="依赖文件关键词 (如: ccav | notify)" class="h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
+                    <Input v-model="repoConfig.dependence" placeholder="依赖文件关键词 (如: utils | notify)" class="h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
                     <p class="text-[10px] text-muted-foreground mt-1 px-1">脚本依赖文件关键词，多个关键词竖线(|)分割</p>
                   </div>
                 </div>
@@ -529,30 +438,8 @@ async function save() {
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">文件后缀</Label>
                   <div class="sm:col-span-3 relative">
-                    <Input v-model="repoConfig.extensions" placeholder="文件后缀 (如: js | py | sh)" class="h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
+                    <Input v-model="repoConfig.extensions" placeholder="文件后缀 (如: js | ts | mjs | cjs | sh)" class="h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" autocomplete="off" />
                     <p class="text-[10px] text-muted-foreground mt-1 px-1">脚本文件后缀，多个后缀竖线(|)分割</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- 运行环境 Section -->
-            <section v-if="selectedAgentId === 'local'" class="space-y-4">
-              <div class="flex items-center gap-2 mb-1">
-                <div class="h-4 w-1 bg-primary rounded-full" />
-                <h3 class="text-sm font-bold text-foreground">运行环境</h3>
-              </div>
-
-              <div class="grid gap-4 pl-3 border-l border-muted">
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3 mt-2">
-                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider pt-2.5">语言环境</Label>
-                  <div class="sm:col-span-3 space-y-2">
-                    <div class="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] leading-relaxed mb-2">
-                      <AlertCircle class="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
-                      <p>同步后生成的任务将自动继承此运行环境。如果不指定语言版本，某些依赖特定语言的脚本（如 js, py）将无法顺利解析和运行！</p>
-                    </div>
-
-                    <TaskLangConfig v-model="selectedLangs" />
                   </div>
                 </div>
               </div>
@@ -617,7 +504,7 @@ async function save() {
       <div class="px-6 py-4 space-y-4 text-sm text-muted-foreground leading-relaxed">
         <p>例如：</p>
         <div class="p-2 rounded-md bg-muted/50 font-mono text-xs select-all text-primary/80 break-all border border-muted-foreground/10">
-          ql repo "https://github.com/a/b.git" "jd_|jx_" "activity" "^jd[^_]" "main" "js|py"
+          ql repo "https://github.com/a/b.git" "jd_|jx_" "activity" "^jd[^_]" "main" "js|ts"
         </div>
         <div class="relative mt-2">
           <Input v-model="qlCommandInput" placeholder="在此处粘贴完整指令，如 ql repo ..." class="h-10 pr-10 focus:ring-primary/20 bg-muted/20" @keydown.enter.prevent="submitQlImport" />
@@ -648,63 +535,24 @@ async function save() {
       <div class="px-6 py-4 space-y-5">
         <div class="p-3 rounded-lg bg-primary/5 border border-primary/10">
           <p class="text-xs text-primary/80 leading-relaxed">
-            粘贴包含 <code class="px-1 py-0.5 rounded bg-primary/10 font-mono">reposync</code> 及其参数的命令，系统将自动填充表单。
+            支持直接粘贴白虎面板 CLI 或 reposync 脚本同步指令，系统将自动拆解填充配置。
           </p>
         </div>
 
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <Label class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">示例命令</Label>
-            <button class="text-[10px] text-primary hover:underline font-medium" @click="baihuCommandInput = 'baihu reposync --source-url \'https://github.com/example/repo.git\' --branch \'main\' --blacklist \'test|dev\' --pre-command \'npm install\' --post-command \'echo done\''">填入示例</button>
-          </div>
-          <div class="p-3 rounded-lg bg-muted/40 font-mono text-[11px] text-muted-foreground/70 border border-muted/20 leading-relaxed break-all">
-            baihu reposync --source-url 'https://...' --branch 'main' --blacklist '...' --pre-command '...' --post-command '...'
-          </div>
-        </div>
-
-        <div class="relative group">
-          <textarea 
-            v-model="baihuCommandInput" 
-            placeholder="在此处粘贴完整指令，如 baihu reposync --source-url ..." 
-            class="w-full min-h-[140px] p-4 rounded-lg bg-muted/30 border border-muted/30 focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all text-sm resize-none outline-none"
-            @keydown.enter.ctrl.prevent="submitBaihuImport"
-          />
-          <div class="absolute bottom-3 right-3 text-[10px] text-muted-foreground/40 font-medium">
-            CTRL + ENTER 快速确认
-          </div>
+          <Label class="text-xs font-semibold">指令内容</Label>
+          <Input v-model="baihuCommandInput" placeholder="baihu reposync --source-url ... --target-path ..." class="h-10 text-xs font-mono bg-muted/20 focus:bg-background" @keydown.enter.prevent="submitBaihuImport" />
         </div>
       </div>
-      
-      <DialogFooter class="px-6 pb-6 pt-2 flex gap-2">
-        <Button variant="ghost" size="sm" @click="showBaihuImportDialog = false" class="flex-1 h-9 rounded-md font-medium text-xs">
+
+      <DialogFooter class="px-6 pb-6 pt-2">
+        <Button variant="outline" size="sm" @click="showBaihuImportDialog = false">
           取消
         </Button>
-        <Button size="sm" @click="submitBaihuImport" class="flex-1 h-9 rounded-md font-bold text-xs shadow-sm bg-primary hover:bg-primary/90">
-          确认解析并填充
+        <Button size="sm" @click="submitBaihuImport">
+          解析并填充
         </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
-
-<style scoped>
-/* 仅针对任务编辑页面的字体渲染优化 */
-:deep(*) {
-  -webkit-font-smoothing: auto !important;
-  -moz-osx-font-smoothing: auto !important;
-  letter-spacing: 0 !important;
-}
-
-:deep(label), :deep(h3), :deep(input) {
-  text-rendering: optimizeLegibility;
-}
-</style>
-<style scoped>
-:deep(*) {
-  text-rendering: optimizeLegibility;
-}
-:deep(label) {
-  text-rendering: optimizeLegibility;
-  letter-spacing: 0.01em;
-}
-</style>

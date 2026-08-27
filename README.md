@@ -13,9 +13,8 @@
 - **环境变量：** 存储普通配置，任务执行时自动注入
 - **现代UI：** 响应式设计，深色/浅色主题切换
 - **移动端：** 适配移动小屏样式
-- **远程执行：** 支持远程agent执行任务，展示执行结果
-- **多语言支持：** 深度集成 Mise，支持几乎所有主流编程语言的动态安装、多版本切换及依赖管理
-- **内建助手库：** **(New)** 为 Python/Node.js 提供零配置助手库，简单 import 即可实现一键推信，无需手动管理 API Token 和 URL
+- **现代运行时：** 基于 Node.js 24 LTS + Alpine 极简架构，原生支持 JavaScript / TypeScript（零编译直接执行）
+- **内建助手库：** **(New)** 为 Node.js/TS 提供零配置助手库 `@baihu`，简单 import 即可实现一键推信与任务交互，无需手动管理 API Token 和 URL
 
 ## 功能特性 
 
@@ -60,12 +59,6 @@
 - 执行日志自动搜索并**屏蔽(********)**敏感机密内容
 - 严格权限隔离：机密仅在定时任务调度时注入，终端/测试环境不可见
 
-### 节点互联体系 (New)
-- 支持 OpenConnect 协议，轻松实现多台白虎面板之间的互联互通
-- 支持节点间的环境变量无缝同步（保留原有结构与 ID）
-- 集成同步管理控制台，统一查看与控制各节点状态与负载指标
-- 底层路由深度适配穿透隧道，完美支持分布式前端代理访问
-
 ### 仓库任务同步 (New)
 - 支持 青龙 仓库命令格式快捷导入
 - 自动解析脚本注释中的 Cron 表达式和环境变量名
@@ -81,42 +74,22 @@
 
 </details>
 
-## 支持语言脚本和依赖
+## 脚本运行与依赖管理
 
 <details>
-<summary><b>点击展开查看已支持的语言及依赖管理详情</b></summary>
+<summary><b>点击展开查看脚本与依赖管理详情</b></summary>
 
 ### 脚本运行环境
-白虎面板原生支持以下脚本的定时执行：
-- **Python3**, **Node.js**, **Bash** (标准版镜像内置环境)
-- 通过 **Mise** 扩展：支持几乎所有主流编程语言的动态安装与切换。
-- **Minimal 版**：不预置 Python/Node，仅内置 Mise 底座，由用户按需安装。
+白虎面板原生内置以下脚本的定时执行：
+- **JavaScript**：`.js`, `.mjs`, `.cjs`
+- **TypeScript**：`.ts`, `.mts`, `.cts`（Node.js 24 LTS 原生直接执行，无需构建编译）
+- **Bash / Shell**：`.sh`, `.bash`
 
 ### 依赖管理支持
-系统内置了高度集成的跨语言依赖管理器，支持自动化安装和管理以下语言的依赖项，并确保在容器内全局可用：
-
-| 语言 | 包管理器 | 功能说明 |
-| :--- | :--- | :--- |
-| **Python** | pip | 自动使用内置虚拟环境，支持清华源 |
-| **Node.js** | npm | 全局安装模式，自动配置 npmmirror 镜像 |
-| **Go** | go install | 通过 `go install` 安装二进制工具 |
-| **Rust** | cargo | 通过 `cargo install` 安装 Rust 依赖 |
-| **Ruby** | gem | 支持 `gem install` 本地安装 |
-| **Bun** | bun | 支持 `bun add -g` 全局模式 |
-| **PHP** | composer | 支持 `composer global require` |
-| **Deno** | deno | 支持 `deno install -g` |
-| **.NET** | dotnet | 支持 `dotnet tool install -g` |
-| **Elixir/Erlang** | mix | 支持 `mix archive.install` |
-| **Lua** | luarocks | 通过 `luarocks` 管理 Lua 包 |
-| **Nim** | nimble | 支持 `nimble install` |
-| **Dart/Flutter** | pub | 支持 `pub global activate` |
-| **Perl** | cpanm | 简单的 `cpanm` 安装支持 |
-| **Crystal** | shards | `shards` 项目级别或工具安装 |
-
-### 使用方法
-1. **安装环境**：进入「编程语言」页面，使用 `mise` 一键安装所需的语言及版本。
-2. **依赖管理**：在已安装列表点击「依赖管理」，输入名称（可选版本）即可自动在对应环境内完成安装。
-3. **隔离机制**：系统基于 `mise exec` 实现了完善的环境隔离，不同版本的依赖包互不冲突。
+系统内置了基于 **pnpm 11.24** 的依赖管理体系：
+- 所有依赖统一维护在 `data/package.json` 与 `data/node_modules` 中；
+- 任务执行时由 Node.js 从 `data/scripts` 原生向上寻址解析依赖；
+- 支持在面板「依赖管理」页面一键安装、批量导入与自动补全缺失依赖。
 
 </details>
 
@@ -127,25 +100,9 @@
 
 ## 快速部署 
 
-项目提供多种基础镜像，可根据具体环境选择：
-
 | 标签 (Tag) | 基础镜像 | 说明 |
 | :--- | :--- | :--- |
-| `latest` | Debian 12 | **默认推荐**：集成 Python 3.13 与 Node.js 23，开箱即用 |
-| `latest-debian13` | Debian 13 | 尝鲜版本，基于 Debian Trixie |
-| `latest-minimal` | Debian 13 | **最小化版**：不预置语言环境，由用户通过面板自主按需安装 |
-
-> **提示**：下方部署示例默认使用 `latest` 标签，如需换用 Debian 13 版，只需将 `latest` 替换为 `latest-debian13` 即可。
-
-> **警告**：**架构升级破坏性变更**
-> 
-> 本版本（2026.02.13+）对底层运行时环境进行了彻底重构，弃用了原有的静态 Python/Node 环境，转为使用 **Mise** 进行动态版本管理。
-> 
-> 1. **不再提供 Alpine 镜像**：由于 glibc 兼容性问题，Mise 无法在 Alpine 上完美运行，因此暂时取消 Alpine 镜像支持。
-> 2. **环境数据不兼容**：如果您是从旧版本升级上来，原有的 Python/Node 环境数据将无法迁移。升级后您需要：
->    - 清空或备份原有的 `envs/` 挂载目录
->    - 启动新容器，让系统自动初始化新的 Mise 环境
->    - 在面板中重新安装所需的语言和依赖
+| `latest` | Node.js 24 Alpine | **极简专属**：集成 Node.js 24 LTS 与 pnpm 11.24，极致轻量，开箱即用 |
 
 
 <details>
@@ -160,7 +117,6 @@ docker run -d \
   --name baihu \
   -p 8052:8052 \
   -v $(pwd)/data:/app/data \
-  -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
   -e BH_SERVER_PORT=8052 \
   -e BH_SERVER_HOST=0.0.0.0 \
@@ -189,7 +145,7 @@ services:
       - "8052:8052"
     volumes:
       - ./data:/app/data
-      - ./envs:/app/envs
+      - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
       - BH_SERVER_PORT=8052
@@ -214,7 +170,6 @@ docker run -d \
   --name baihu \
   -p 8052:8052 \
   -v $(pwd)/data:/app/data \
-  -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
   -e BH_SERVER_PORT=8052 \
   -e BH_SERVER_HOST=0.0.0.0 \
@@ -243,7 +198,7 @@ services:
       - "8052:8052"
     volumes:
       - ./data:/app/data
-      - ./envs:/app/envs
+      - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
       - BH_SERVER_PORT=8052
@@ -280,7 +235,6 @@ docker run -d \
   -p 8052:8052 \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/configs:/app/configs \
-  -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
   -e BAIHU_SECRET_KEY=your_secret_key_here \
   --restart unless-stopped \
@@ -299,7 +253,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./configs:/app/configs
-      - ./envs:/app/envs
     environment:
       - TZ=Asia/Shanghai
       - BAIHU_SECRET_KEY=your_secret_key_here
@@ -355,7 +308,7 @@ services:
       - "8052:8052"
     volumes:
       - ./data:/app/data
-      - ./envs:/app/envs
+      - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
       - BH_SERVER_PORT=8052
@@ -408,7 +361,7 @@ services:
       - "8052:8052"
     volumes:
       - ./data:/app/data
-      - ./envs:/app/envs
+      - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
       - BH_SERVER_PORT=8052
@@ -581,28 +534,26 @@ baihu restore <file>     # 使用本地的 .zip 备份压缩包文件，一条�
 ```
 ./
 ├── baihu                 # 可执行文件
-├── data/                 # 数据目录（自动创建）
+├── data/                 # 数据目录（Node 项目根目录，统一持久化所有数据与依赖）
 │   ├── baihu.db          # SQLite 数据库
-│   └── scripts/          # 脚本文件存储
-├── configs/
-│   └── config.ini        # 配置文件（自动创建）
-└── envs/                 # 运行环境挂载目录（自动创建）
-    └── mise/             # Mise 运行时核心目录 (包含所有语言环境及依赖)
+│   ├── package.json      # Node.js 项目配置 (管理所有全局与任务依赖)
+│   ├── node_modules/     # 安装的 Node.js 依赖包 (Node 向上寻址)
+│   └── scripts/          # 用户脚本工作区 (保持纯净的脚本文件)
+└── configs/
+    └── config.ini        # 配置文件（自动创建）
 ```
 
 ### Docker 启动流程
 
 容器启动时 `docker-entrypoint.sh` 会执行以下操作：
 
-1. **目录就绪**：检查并创建 `/app/data`、`/app/configs`、`/app/envs` 等核心目录。
-2. **Mise 环境同步**：自动从镜像内置基础环境同步初始化文件至 `/app/envs/mise`，确保持久化挂载后运行时依然可用。
-3. **运行时激活**：
-   - 自动注入 `MISE_DATA_DIR` 等环境变量，确保运行时数据指向持久化目录。
-   - 将 `mise shims` 路径加入系统 `PATH`，实现 Python、Node.js 等多版本环境的全局无感调用。
-4. **依赖管理预设**：默认配置 Python 清华源（PIP）镜像，优化 Node.js 默认内存上限。
-5. **启动应用**：运行 `baihu` 面板主进程。
+1. **目录就绪**：检查并创建 `/app/data`、`/app/configs`、`/app/data/scripts` 目录。
+2. **项目与 SDK 初始化**：自动初始化 `/app/data/package.json` 并通过 `pnpm add` 添加内建 `baihu` SDK 助手库。
+3. **运行时验证**：校验 Node.js 24 与 pnpm 11.24 环境。
+4. **命令行补全**：自动配置 bash 下的 `baihu` 命令行补全。
+5. **启动应用**：运行 `baihu server` 后台服务进程。
 
-> **提示**：通过挂载 `./envs:/app/envs`，您通过面板安装的所有编程语言运行时以及通过「依赖管理」安装的所有第三方库都会永久保留，容器升级或重启后无需重新安装。
+> **提示**：通过挂载 `./data:/app/data`，您的所有计划任务脚本、已安装的 Node.js 依赖包以及 SQLite 数据库都会永久保存在该目录下，容器升级或重启后零配置即启即用。
 
 ## 配置说明
 

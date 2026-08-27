@@ -11,28 +11,19 @@ func initPublicAPIRoutes(api *gin.RouterGroup, c *Controllers) {
 		ctx.JSON(200, gin.H{"message": "pong"})
 	})
 
-	// api.GET("/debug/goroutines", func(ctx *gin.Context) {
-	// 	buf := make([]byte, 1024*1024)
-	// 	n := runtime.Stack(buf, true)
-	// 	ctx.Data(200, "text/plain; charset=utf-8", buf[:n])
-	// })
-
 	// Authentication routes (无需认证)
 	auth := api.Group("/auth")
 	{
 		auth.POST("/login", c.Auth.Login)
 		auth.POST("/login/otp", c.Auth.VerifyOTP)
 		auth.POST("/logout", c.Auth.Logout)
-		// auth.POST("/register", c.Auth.Register)
 	}
 
 	// 公开的站点设置（无需认证）
 	api.GET("/settings/public", c.Settings.GetPublicSiteSettings)
 
-	// 隧道模式 (被控端反向连入，使用独立 Token 做 WebSocket 鉴权)
-	api.GET("/interconnect/tunnel", c.Interconnect.HandleTunnel)
-	// 子节点主动上报监控数据 (无中间件鉴权，内部鉴权)
-	api.POST("/interconnect/report", c.Interconnect.ReportMonitorData)
+	// 消息推送发送接口（支持 notify-token、OpenAPI Token 或 登录状态）
+	api.POST("/notify/send", middleware.NotifyTokenAuth(), c.Notification.SendNotification)
 
 	// 内部使用的 API（仅限本地调用，无需 Bearer 认证）
 	internalAPI := api.Group("/internal")
@@ -73,54 +64,50 @@ func initAuthorizedAPIRoutes(api *gin.RouterGroup, c *Controllers) {
 			registerTerminalRoutes(adminOnly, c)
 			registerSettingsRoutes(adminOnly, c)
 			registerDependencyRoutes(adminOnly, c)
-			registerAgentRoutes(adminOnly, c)
-			registerMiseRoutes(adminOnly, c)
 			registerNotificationRoutes(adminOnly, c)
 			registerAppLogRoutes(adminOnly, c)
 			registerSystemWSRoutes(adminOnly, c)
-			registerWebUIRoutes(adminOnly, c)
 			registerMonitorRoutes(adminOnly, c)
-			registerInterconnectRoutes(adminOnly, c)
+			registerWebUIRoutes(adminOnly, c)
 			registerSystemRoutes(adminOnly, c)
 			registerTagRoutes(adminOnly, c)
 		}
 	}
-
-	// 通知发送 API（使用通知 Token 认证，供脚本调用）
-	notifyAPI := api.Group("/notify")
-	notifyAPI.Use(middleware.NotifyTokenAuth())
-	{
-		notifyAPI.POST("/send", c.Notification.SendNotification)
-	}
 }
 
 func registerDashboardRoutes(g *gin.RouterGroup, c *Controllers) {
-	g.GET("/stats", c.Dashboard.GetStats)
-	g.GET("/sentence", c.Dashboard.GetSentence)
-	g.GET("/sendstats", c.Dashboard.GetSendStats)
-	g.GET("/taskstats", c.Dashboard.GetTaskStats)
+	dashboard := g.Group("/dashboard")
+	{
+		dashboard.GET("/stats", c.Dashboard.GetStats)
+		dashboard.GET("/sentence", c.Dashboard.GetSentence)
+		dashboard.GET("/sendstats", c.Dashboard.GetSendStats)
+		dashboard.GET("/taskstats", c.Dashboard.GetTaskStats)
+	}
 }
 
 func registerTaskRoutes(g *gin.RouterGroup, c *Controllers) {
 	tasks := g.Group("/tasks")
 	{
-		tasks.POST("", c.Task.CreateTask)
-		tasks.GET("", c.Task.GetTasks)
-		tasks.GET("/:id", c.Task.GetTask)
-		tasks.POST("/bulk_save", c.Task.BulkSaveTask)
-		tasks.PUT("/:id", c.Task.UpdateTask)
-		tasks.DELETE("/:id", c.Task.DeleteTask)
-		tasks.POST("/batch-delete", c.Task.BatchDeleteTasks)
-		tasks.DELETE("/batch-by-query", c.Task.BatchDeleteByQuery)
-		tasks.POST("/stop/:logID", c.Task.StopTask)
+		tasks.GET("", c.Task.List)
+		tasks.POST("", c.Task.Create)
 		tasks.GET("/tags", c.Task.GetTags)
-	}
-
-	execution := g.Group("/execute")
-	{
-		execution.POST("/task/:id", c.Executor.ExecuteTask)
-		execution.POST("/command", c.Executor.ExecuteCommand)
-		execution.GET("/results", c.Executor.GetLastResults)
+		tasks.GET("/:id", c.Task.Get)
+		tasks.PUT("/:id", c.Task.Update)
+		tasks.DELETE("/:id", c.Task.Delete)
+		tasks.POST("/batch-delete", c.Task.BatchDelete)
+		tasks.DELETE("/batch-by-query", c.Task.BatchDeleteByQuery)
+		tasks.POST("/:id/execute", c.Task.Execute)
+		tasks.POST("/:id/stop", c.Task.Stop)
+		tasks.POST("/:id/toggle", c.Task.Toggle)
+		tasks.POST("/batch-toggle", c.Task.BatchToggle)
+		tasks.POST("/batch-run", c.Task.BatchRun)
+		tasks.POST("/batch-stop", c.Task.BatchStop)
+		tasks.POST("/sync-all-repos", c.Task.SyncAllRepos)
+		tasks.GET("/:id/logs", c.Task.GetLogs)
+		tasks.GET("/:id/last-result", c.Task.GetLastResult)
+		tasks.POST("/import", c.Task.ImportTasks)
+		tasks.POST("/tags", c.Task.BatchUpdateTags)
+		tasks.POST("/pin", c.Task.BatchUpdatePin)
 	}
 }
 
@@ -129,8 +116,8 @@ func registerEnvRoutes(g *gin.RouterGroup, c *Controllers) {
 	{
 		env.GET("/secret-status", c.Env.GetSecretStatus)
 		env.GET("/tags", c.Env.GetTags)
+		env.POST("/bulk-save", c.Env.BulkSaveEnv)
 		env.POST("", c.Env.CreateEnvVar)
-		env.POST("/bulk_save", c.Env.BulkSaveEnv)
 		env.GET("", c.Env.GetEnvVars)
 		env.GET("/all", c.Env.GetAllEnvVars)
 		env.GET("/:id", c.Env.GetEnvVar)
@@ -182,7 +169,6 @@ func registerLogRoutes(g *gin.RouterGroup, c *Controllers) {
 
 func registerTerminalRoutes(g *gin.RouterGroup, c *Controllers) {
 	g.GET("/terminal/ws", c.Terminal.HandleWebSocket)
-	// g.POST("/terminal/exec", c.Terminal.ExecuteShellCommand) // 暂未使用，已注释
 	g.GET("/terminal/cmds", c.Terminal.GetCommands)
 }
 
@@ -203,7 +189,6 @@ func registerSettingsRoutes(g *gin.RouterGroup, c *Controllers) {
 		settings.GET("/backup/status", c.Settings.GetBackupStatus)
 		settings.GET("/backup/download", c.Settings.DownloadBackup)
 		settings.POST("/restore", c.Settings.RestoreBackup)
-		// 通用设置接口
 		settings.GET("/:section", c.Settings.GetSectionSettings)
 		settings.PUT("/:section", c.Settings.UpdateSectionSettings)
 		settings.GET("/:section/:key", c.Settings.GetSetting)
@@ -227,44 +212,6 @@ func registerDependencyRoutes(g *gin.RouterGroup, c *Controllers) {
 		deps.POST("/import", c.Dependency.ParseAndImport)
 		deps.GET("/installed", c.Dependency.GetInstalled)
 		deps.GET("/install-suggest-cmd", c.Dependency.GetDepInstallCommand)
-	}
-}
-
-func registerAgentRoutes(g *gin.RouterGroup, c *Controllers) {
-	agents := g.Group("/agents")
-	{
-		agents.GET("", c.Agent.List)
-		agents.GET("/version", c.Agent.GetVersion)
-		agents.PUT("/:id", c.Agent.Update)
-		agents.DELETE("/:id", c.Agent.Delete)
-		agents.POST("/:id/token", c.Agent.RegenerateToken)
-		agents.POST("/:id/update", c.Agent.ForceUpdate)
-		// 令牌管理
-		agents.GET("/tokens", c.Agent.ListTokens)
-		agents.POST("/tokens", c.Agent.CreateToken)
-		agents.DELETE("/tokens/:id", c.Agent.DeleteToken)
-	}
-
-	// Agent API（供前端调用，保持在 v1 下）
-	agentAPIv1 := g.Group("/agent")
-	{
-		agentAPIv1.GET("/download", c.Agent.Download)
-	}
-}
-
-func registerMiseRoutes(g *gin.RouterGroup, c *Controllers) {
-	mise := g.Group("/mise")
-	{
-		mise.GET("/ls", c.Mise.List)
-		mise.POST("/sync", c.Mise.Sync)
-		mise.GET("/plugins", c.Mise.Plugins)
-		mise.GET("/versions", c.Mise.Versions)
-		mise.GET("/verify-cmd", c.Mise.VerifyCommand)
-		mise.POST("/use-global", c.Mise.UseGlobal)
-		mise.POST("/unset-global", c.Mise.UnsetGlobal)
-		mise.GET("/envs", c.Mise.Envs)
-		mise.POST("/envs", c.Mise.SetEnv)
-		mise.DELETE("/envs", c.Mise.UnsetEnv)
 	}
 }
 
@@ -307,18 +254,6 @@ func registerMonitorRoutes(g *gin.RouterGroup, c *Controllers) {
 	}
 }
 
-func initAgentAPIRoutes(root *gin.RouterGroup, c *Controllers) {
-	// Agent API（供远程 Agent 调用，不使用 /v1 版本号）
-	agentAPI := root.Group("/api/agent")
-	{
-		agentAPI.POST("/heartbeat", c.Agent.Heartbeat)
-		agentAPI.GET("/tasks", c.Agent.GetTasks)
-		agentAPI.POST("/report", c.Agent.ReportResult)
-		agentAPI.GET("/download", c.Agent.Download) // 也在这里注册，兼容 Agent 调用
-		agentAPI.GET("/ws", c.Agent.WSConnect)      // WebSocket 连接
-	}
-}
-
 func registerWebUIRoutes(g *gin.RouterGroup, c *Controllers) {
 	webuiGroup := g.Group("/webui")
 	{
@@ -326,25 +261,6 @@ func registerWebUIRoutes(g *gin.RouterGroup, c *Controllers) {
 		webuiGroup.POST("/upload", c.WebUI.UploadWebUI)
 		webuiGroup.PUT("/active", c.WebUI.SetActiveWebUI)
 		webuiGroup.DELETE("/:name", c.WebUI.DeleteWebUI)
-	}
-}
-
-func registerInterconnectRoutes(g *gin.RouterGroup, c *Controllers) {
-	interconnect := g.Group("/interconnect")
-	{
-		interconnect.GET("/nodes", c.Interconnect.GetNodes)
-		interconnect.POST("/nodes", c.Interconnect.CreateNode)
-		interconnect.PUT("/nodes/:id", c.Interconnect.UpdateNode)
-		interconnect.DELETE("/nodes/:id", c.Interconnect.DeleteNode)
-		interconnect.GET("/nodes/:id/status", c.Interconnect.GetNodeStatus)
-		interconnect.POST("/sync/script", c.Interconnect.SyncScript)
-		interconnect.POST("/sync/env", c.Interconnect.SyncEnv)
-		interconnect.POST("/sync/task", c.Interconnect.SyncTask)
-		
-		interconnect.GET("/child/status", c.Interconnect.GetChildStatus)
-		
-		// 代理模式 (面板穿越)
-		interconnect.Any("/proxy/:node_id/*path", c.Interconnect.ProxyRequest)
 	}
 }
 
@@ -365,4 +281,3 @@ func registerTagRoutes(g *gin.RouterGroup, c *Controllers) {
 		tags.DELETE("/:id", c.Tag.DeleteTag)
 	}
 }
-

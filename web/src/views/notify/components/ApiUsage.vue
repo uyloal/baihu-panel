@@ -370,7 +370,7 @@ const currentExample = computed(() => {
                   </Button>
                 </div>
                 <p class="text-[10px] text-zinc-500 italic pl-1">
-                  * 该命令会为 mise 管理的所有 Python 和 Node.js 版本安装 <code class="text-primary font-bold">baihu</code> 包。
+                  * 该命令会将 <code class="text-primary font-bold">packages/baihu</code> SDK 链接并安装至 scripts 项目。
                 </p>
               </div>
 
@@ -378,38 +378,38 @@ const currentExample = computed(() => {
               <div class="space-y-3">
                 <span class="block text-zinc-500 uppercase text-[10px] font-bold tracking-widest flex items-center gap-1.5">
                   <Code2 class="w-3.5 h-3.5" />
-                  导入并使用
+                  导入并使用 (ESM & CJS)
                 </span>
                 
                 <div class="grid grid-cols-1 gap-3">
-                  <!-- Python 示例 -->
+                  <!-- ESM / TS 示例 -->
                   <div class="space-y-1.5">
                     <div class="flex items-center justify-between px-1">
-                      <span class="text-[10px] font-medium text-zinc-400">Python</span>
-                      <badge variant="outline" class="text-[8px] h-3.5 px-1 border-zinc-700 text-zinc-500">BAIHU-PY</badge>
+                      <span class="text-[10px] font-medium text-zinc-400">ESM / TypeScript</span>
+                      <badge variant="outline" class="text-[8px] h-3.5 px-1 border-zinc-700 text-zinc-500">ESM</badge>
                     </div>
                     <div class="bg-zinc-200/50 dark:bg-zinc-800/60 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700/50 relative group shadow-sm">
-                      <pre class="text-[11px] leading-snug"><span class="text-violet-500">import</span> baihu<br/>baihu.notify(<span class="text-emerald-600">"标题"</span>, <span class="text-emerald-600">"内容"</span>)</pre>
+                      <pre class="text-[11px] leading-snug"><span class="text-violet-500">import</span> { notify } <span class="text-violet-500">from</span> <span class="text-emerald-600">'baihu'</span>;<br/><span class="text-violet-500">await</span> notify(<span class="text-emerald-600">"标题"</span>, <span class="text-emerald-600">"内容"</span>);</pre>
                       <Button variant="ghost" size="icon"
                         class="absolute right-2 top-2 h-6 w-6 text-zinc-400 opacity-0 group-hover:opacity-100 transition-all"
-                        @click="handleCopy('import baihu\nbaihu.notify(\'标题\', \'内容\')', 'py-builtin')">
-                        <Check v-if="copiedBlock === 'py-builtin'" class="w-3.5 h-3.5 text-emerald-500" />
+                        @click="handleCopy('import { notify } from \'baihu\';\nawait notify(\'标题\', \'内容\');', 'esm-builtin')">
+                        <Check v-if="copiedBlock === 'esm-builtin'" class="w-3.5 h-3.5 text-emerald-500" />
                         <Copy v-else class="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
 
-                  <!-- Node.js 示例 -->
+                  <!-- CJS 示例 -->
                   <div class="space-y-1.5">
                     <div class="flex items-center justify-between px-1">
-                      <span class="text-[10px] font-medium text-zinc-400">Node.js</span>
-                      <badge variant="outline" class="text-[8px] h-3.5 px-1 border-zinc-700 text-zinc-500">BAIHU-JS</badge>
+                      <span class="text-[10px] font-medium text-zinc-400">CommonJS (Node.js)</span>
+                      <badge variant="outline" class="text-[8px] h-3.5 px-1 border-zinc-700 text-zinc-500">CJS</badge>
                     </div>
                     <div class="bg-zinc-200/50 dark:bg-zinc-800/60 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700/50 relative group shadow-sm">
-                      <pre class="text-[11px] leading-snug"><span class="text-violet-500">const</span> baihu = require(<span class="text-emerald-600">'baihu'</span>);<br/>baihu.notify(<span class="text-emerald-600">"标题"</span>, <span class="text-emerald-600">"内容"</span>);</pre>
+                      <pre class="text-[11px] leading-snug"><span class="text-violet-500">const</span> { notify } = require(<span class="text-emerald-600">'baihu'</span>);<br/>notify(<span class="text-emerald-600">"标题"</span>, <span class="text-emerald-600">"内容"</span>);</pre>
                       <Button variant="ghost" size="icon"
                         class="absolute right-2 top-2 h-6 w-6 text-zinc-400 opacity-0 group-hover:opacity-100 transition-all"
-                        @click="handleCopy('const baihu = require(\'baihu\');\nbaihu.notify(\'标题\', \'内容\');', 'js-builtin')">
+                        @click="handleCopy('const { notify } = require(\'baihu\');\nnotify(\'标题\', \'内容\');', 'js-builtin')">
                         <Check v-if="copiedBlock === 'js-builtin'" class="w-3.5 h-3.5 text-emerald-500" />
                         <Copy v-else class="w-3.5 h-3.5" />
                       </Button>

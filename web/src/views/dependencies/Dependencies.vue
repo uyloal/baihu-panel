@@ -1,31 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Trash2, Package, Search, RefreshCw, Loader2, Download, FileText, RotateCw, ChevronLeft, FileUp, Terminal as TerminalIcon } from 'lucide-vue-next'
+import { Trash2, Package, Search, RefreshCw, Loader2, Download, FileText, RotateCw, FileUp, Terminal as TerminalIcon } from 'lucide-vue-next'
 import { api, type Dependency } from '@/api'
 import TextOverflow from '@/components/TextOverflow.vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'vue-sonner'
 import XTerminal from '@/components/XTerminal.vue'
+import { ansiToHtml } from '@/utils/ansi'
 
-const route = useRoute()
-const language = computed(() => route.query.language as string || '')
-const langVersion = computed(() => route.query.version as string || '')
-
-const activeTab = ref('python')
 const deps = ref<Dependency[]>([])
 const loading = ref(false)
 const installing = ref(false)
 const reinstalling = ref<string | null>(null)
 const reinstallingAll = ref(false)
-const installedLangs = ref<string[]>([])
 
 // 批量选择状态
 const selectedDeps = ref<string[]>([])
@@ -50,11 +44,11 @@ const logPkgName = ref('')
 const searchQuery = ref('')
 
 const filteredDeps = computed(() => {
-  const list = deps.value.filter(d => d.language === activeTab.value)
-  if (!searchQuery.value) return list
+  if (!searchQuery.value) return deps.value
   const q = searchQuery.value.toLowerCase()
-  return list.filter(d => d.name.toLowerCase().includes(q))
+  return deps.value.filter(d => d.name.toLowerCase().includes(q))
 })
+
 // 批量选择逻辑
 const isAllSelected = computed(() => {
   const list = filteredDeps.value
@@ -79,34 +73,15 @@ function toggleSelect(id: string, checked: boolean) {
     selectedDeps.value = selectedDeps.value.filter(item => item !== id)
   }
 }
+
 async function loadDeps() {
   loading.value = true
   try {
-    deps.value = await api.deps.list({
-      language: language.value || activeTab.value,
-      lang_version: langVersion.value
-    })
+    deps.value = await api.deps.list()
   } catch {
     toast.error('加载依赖列表失败')
   } finally {
     loading.value = false
-  }
-}
-
-async function loadInstalledLangs() {
-  try {
-    const langs = await api.mise.list()
-    // 获取去重后的插件名，按字母排序
-    installedLangs.value = [...new Set(langs.map(l => l.plugin))].sort()
-
-    // 如果当前 activeTab 不在已安装列表中，且不是 system，则默认选中第一个
-    if (activeTab.value !== 'system' && !installedLangs.value.includes(activeTab.value)) {
-      if (installedLangs.value.length > 0) {
-        activeTab.value = installedLangs.value[0]!
-      }
-    }
-  } catch {
-    toast.error('获取已安装环境失败')
   }
 }
 
@@ -126,15 +101,13 @@ async function installPackage() {
   const pkgData = {
     name: newPkgName.value.trim(),
     version: newPkgVersion.value.trim() || undefined,
-    remark: newPkgRemark.value.trim() || undefined,
-    language: language.value || activeTab.value,
-    lang_version: langVersion.value || undefined
+    remark: newPkgRemark.value.trim() || undefined
   }
 
   installing.value = true
   try {
     await api.deps.install(pkgData)
-    toast.success('指令已发送，详情请查看日志')
+    toast.success('安装指令已发送，详情请查看日志')
     showInstallDialog.value = false
   } catch (e: any) {
     toast.error('安装过程出错: ' + e.message)
@@ -187,8 +160,6 @@ async function uninstallPackage() {
   }
 }
 
-import { ansiToHtml } from '@/utils/ansi'
-
 const renderedLog = computed(() => {
   return ansiToHtml(logContent.value)
 })
@@ -203,7 +174,7 @@ async function reinstallPackage(dep: Dependency) {
   reinstalling.value = dep.id
   try {
     await api.deps.reinstall(dep.id)
-    toast.success(`重装指令已发送`)
+    toast.success('重装指令已发送')
   } catch (e: any) {
     toast.error('重装错误: ' + e.message)
   } finally {
@@ -215,9 +186,7 @@ async function reinstallPackage(dep: Dependency) {
 async function reinstallAll() {
   reinstallingAll.value = true
   try {
-    const lang = language.value || activeTab.value
-    const ver = langVersion.value
-    await api.deps.reinstallAll(lang, ver)
+    await api.deps.reinstallAll()
     toast.success('全部重装指令执行完毕')
   } catch (e: any) {
     toast.error('全部重装错误: ' + e.message)
@@ -257,14 +226,12 @@ async function startBatchInstall() {
   try {
     const reqItems = selectedPackages.map(d => ({
       name: d.name,
-      version: d.version || undefined,
-      language: d.language,
-      lang_version: d.lang_version || undefined
+      version: d.version || undefined
     }))
 
     const res = await api.deps.getBatchInstallCmd({ items: reqItems })
     if (res.command) {
-      selectedDeps.value = [] // 重置选择
+      selectedDeps.value = []
       openTerminalWithCommand(res.command)
     }
   } catch (e: any) {
@@ -288,15 +255,13 @@ function openImportDialog() {
 
 async function handleImportManifest() {
   if (!manifestContent.value.trim()) {
-    toast.error('请输入描述清单内容')
+    toast.error('请输入 package.json 或包列表内容')
     return
   }
 
   importingManifest.value = true
   try {
     const res = await api.deps.import({
-      language: language.value || activeTab.value,
-      lang_version: langVersion.value || undefined,
       content: manifestContent.value.trim(),
       import_db: importDb.value
     })
@@ -315,38 +280,7 @@ async function handleImportManifest() {
   }
 }
 
-function getTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    python: 'Python',
-    node: 'Node.js',
-    ruby: 'Ruby',
-    go: 'Go',
-    rust: 'Rust',
-    bun: 'Bun',
-    php: 'PHP',
-    deno: 'Deno',
-    dotnet: '.NET',
-    elixir: 'Elixir',
-    erlang: 'Erlang',
-    lua: 'Lua',
-    nim: 'Nim',
-    dart: 'Dart',
-    flutter: 'Flutter',
-    perl: 'Perl',
-    crystal: 'Crystal'
-  }
-  return labels[type] || type.charAt(0).toUpperCase() + type.slice(1)
-}
-
-watch(activeTab, () => {
-  selectedDeps.value = []
-  loadDeps()
-})
-
-// 如果 URL 中带了环境参数，自动切 Tab
-onMounted(async () => {
-  await loadInstalledLangs()
-  if (language.value) activeTab.value = language.value
+onMounted(() => {
   loadDeps()
 })
 </script>
@@ -355,24 +289,11 @@ onMounted(async () => {
   <div class="space-y-4 relative pb-16">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <Button v-if="language" variant="ghost" size="icon" @click="$router.back()" class="h-8 w-8">
-          <ChevronLeft class="h-5 w-5" />
-        </Button>
         <div>
           <h2 class="text-xl sm:text-2xl font-bold tracking-tight">依赖管理</h2>
-          <p class="text-muted-foreground text-sm">管理工具运行环境的依赖包</p>
+          <p class="text-muted-foreground text-sm">基于 pnpm 管理 scripts 项目的 Node.js 运行依赖包</p>
         </div>
       </div>
-    </div>
-
-    <!-- 当前环境信息 -->
-    <div v-if="language && langVersion"
-      class="bg-primary/5 border border-primary/10 rounded-lg p-3 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <Package class="h-4 w-4 text-primary/80" />
-        <span class="text-sm">正在管理环境: <span class="font-bold font-mono">{{ language }}@{{ langVersion }}</span></span>
-      </div>
-      <Badge variant="outline" class="font-mono text-xs border-primary/20 text-primary/80">隔离环境</Badge>
     </div>
 
     <div class="mt-4">
@@ -389,16 +310,15 @@ onMounted(async () => {
           </div>
           <!-- 第二行：操作按钮 -->
           <div class="flex items-center gap-1.5 sm:gap-2 justify-end w-full sm:w-auto overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
-            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 shadow-sm" @click="loadDeps" :disabled="loading">
+            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 shadow-sm" @click="loadDeps" :disabled="loading" title="刷新">
               <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
             </Button>
             <Button variant="outline" size="sm" class="h-9 px-2.5 sm:px-3 text-xs sm:text-sm shrink-0 shadow-sm" @click="reinstallAll"
               :disabled="reinstallingAll || filteredDeps.length === 0">
               <RotateCw class="h-3.5 w-3.5 mr-1" :class="{ 'animate-spin': reinstallingAll }" /> 
-              <span>全部重装</span>
+              <span>全部重装 (pnpm install)</span>
             </Button>
-            <Button variant="outline" size="sm" class="h-9 px-2.5 sm:px-3 text-xs sm:text-sm shrink-0 shadow-sm" @click="openImportDialog"
-              :disabled="activeTab !== 'python' && activeTab !== 'node'">
+            <Button variant="outline" size="sm" class="h-9 px-2.5 sm:px-3 text-xs sm:text-sm shrink-0 shadow-sm" @click="openImportDialog">
               <FileUp class="h-3.5 w-3.5 mr-1" /> 
               <span>导入清单</span>
             </Button>
@@ -500,30 +420,28 @@ onMounted(async () => {
       <Dialog v-model:open="showInstallDialog">
         <DialogContent class="sm:max-w-[400px]" @openAutoFocus.prevent>
           <DialogHeader>
-            <DialogTitle>安装 {{ getTypeLabel(activeTab) }} 包</DialogTitle>
+            <DialogTitle>安装 npm / Node.js 依赖</DialogTitle>
             <DialogDescription class="sr-only">输入包名和版本号进行安装</DialogDescription>
           </DialogHeader>
           <div class="grid gap-4 py-4">
             <div class="grid grid-cols-4 items-center gap-4">
               <Label class="text-right">包名</Label>
-              <Input v-model="newPkgName"
-                :placeholder="activeTab === 'python' ? 'requests' : (activeTab === 'node' ? 'lodash' : 'package-name')"
-                class="col-span-3" />
+              <Input v-model="newPkgName" placeholder="如: axios, lodash-es" class="col-span-3" />
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
               <Label class="text-right">版本</Label>
-              <Input v-model="newPkgVersion" placeholder="可选，如 1.0.0" class="col-span-3" />
+              <Input v-model="newPkgVersion" placeholder="可选，如 ^1.0.0" class="col-span-3" />
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
               <Label class="text-right">备注</Label>
-              <Input v-model="newPkgRemark" placeholder="可选" class="col-span-3" />
+              <Input v-model="newPkgRemark" placeholder="可选备注说明" class="col-span-3" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" @click="showInstallDialog = false">取消</Button>
             <Button @click="installPackage" :disabled="installing">
               <Loader2 v-if="installing" class="h-4 w-4 mr-2 animate-spin" />
-              安装
+              安装 (pnpm add)
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -533,9 +451,9 @@ onMounted(async () => {
       <Dialog v-model:open="showImportDialog">
         <DialogContent class="sm:max-w-[500px]" @openAutoFocus.prevent>
           <DialogHeader>
-            <DialogTitle>导入依赖描述清单</DialogTitle>
+            <DialogTitle>导入 package.json 依赖清单</DialogTitle>
             <DialogDescription>
-              支持粘贴 Python requirements.txt 或 Node.js package.json 的文本内容进行解析。
+              支持粘贴 package.json 文本或包名列表进行解析。
             </DialogDescription>
           </DialogHeader>
           <div class="grid gap-4 py-2">
@@ -543,7 +461,7 @@ onMounted(async () => {
               <Label class="text-sm font-semibold">清单内容</Label>
               <Textarea v-model="manifestContent" rows="10"
                 class="text-xs font-mono bg-muted/40 placeholder:font-sans placeholder:text-muted-foreground resize-none"
-                placeholder="在此粘贴 requirements.txt 或 package.json 文本..." />
+                placeholder="在此粘贴 package.json 或包列表 (每行一个包名)..." />
             </div>
             <div class="flex items-center gap-2">
               <Checkbox id="importDb" v-model:checked="importDb" />
@@ -572,7 +490,7 @@ onMounted(async () => {
               实时依赖安装控制台
             </DialogTitle>
             <DialogDescription class="text-zinc-400">
-              后台正在使用隔离环境运行安装指令，可实时查看流式输出日志。
+              正在 scripts 工作区运行 pnpm 指令，可实时查看流式输出日志。
             </DialogDescription>
           </DialogHeader>
 

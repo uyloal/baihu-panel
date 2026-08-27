@@ -1,5 +1,6 @@
 # Binaries
 baihu
+!baihu/
 *.exe
 *.dll
 *.so
@@ -69,3 +70,4 @@ builtin/**/*.pyc
 
 .agents/
 
+.pnpm-store

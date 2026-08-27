@@ -63,5 +63,33 @@
     "brace-expansion": "^5.0.9",
     "fast-uri": "^3.1.5",
     "nanoid": "^5.1.16"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-arm64-musl": "^4.62.5",
+    "@rollup/rollup-linux-x64-musl": "^4.62.5",
+    "@rollup/rollup-linux-arm64-gnu": "^4.62.5",
+    "@rollup/rollup-linux-x64-gnu": "^4.62.5",
+    "@esbuild/linux-arm64": "^0.28.1",
+    "@esbuild/linux-x64": "^0.28.1"
+  },
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": [
+        "current",
+        "linux",
+        "darwin",
+        "win32"
+      ],
+      "cpu": [
+        "current",
+        "x64",
+        "arm64"
+      ],
+      "libc": [
+        "current",
+        "musl",
+        "glibc"
+      ]
+    }
   }
 }

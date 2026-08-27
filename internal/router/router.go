@@ -25,14 +25,11 @@ type Controllers struct {
 	Terminal     *controllers.TerminalController
 	Settings     *controllers.SettingsController
 	Dependency   *controllers.DependencyController
-	Agent        *controllers.AgentController
-	Mise         *controllers.MiseController
 	Notification *controllers.NotificationController
 	AppLog       *controllers.AppLogController
 	SystemWS     *controllers.SystemWSController
 	WebUI        *controllers.WebUIController
 	Monitor      *controllers.MonitorController
-	Interconnect *controllers.InterconnectController
 	Data         *controllers.DataController
 	Tag          *controllers.TagController
 }
@@ -43,11 +40,15 @@ func Setup(c *Controllers) *gin.Engine {
 	}
 	router := gin.New()
 	router.Use(middleware.GinLogger(), middleware.GinRecovery())
-	router.Use(middleware.TravelProxyMiddleware())
 
 	// 获取 URL 前缀
 	cfg := services.GetConfig()
-	urlPrefix := strings.TrimSuffix(cfg.Server.URLPrefix, "/")
+	urlPrefix := ""
+	pprofEnabled := false
+	if cfg != nil {
+		urlPrefix = strings.TrimSuffix(cfg.Server.URLPrefix, "/")
+		pprofEnabled = cfg.Server.PprofEnabled
+	}
 
 	// 创建一个路由组，如果有前缀则使用前缀，否则使用根路径
 	var root *gin.RouterGroup
@@ -58,52 +59,43 @@ func Setup(c *Controllers) *gin.Engine {
 	}
 
 	// 按需绑定 Pprof 调试路由 (注册在 root 下以支持 URLPrefix)
-	if cfg.Server.PprofEnabled {
-		// pprof.RouteRegister 会在传入的路由组下注册 /debug/pprof 等路由
+	if pprofEnabled {
 		pprof.RouteRegister(root)
 	}
 
 	// =========================================================================
-	// 路由分类组装 (对应 Nginx 的 location 块分发)
+	// 路由分类组装
 	// =========================================================================
 
-	// 1. [ location /assets ] 静态资源路由
+	// 1. 静态资源路由
 	initStaticRoutes(root)
 
-	// 3. [ location /api ] 内部 API 路由组
+	// 2. 内部 API 路由组
 	apiV1 := root.Group("/api/v1")
 	initPublicAPIRoutes(apiV1, c)     // 公开接口 (无需认证)
 	initAuthorizedAPIRoutes(apiV1, c) // 授权接口 (需 JWT)
 
-	// 4. [ location /api/agent ] Agent 相关 API 路由组
-	initAgentAPIRoutes(root, c)
+	// 3. OpenAPI 路由组
 	initOpenAPIV1Routes(root, c)
 
 	// =========================================================================
-	// [ location / ] 全局 404 兜底与 SPA 渲染
-	// 对应 Nginx: try_files $uri $uri/ /index.html;
+	// 全局 404 兜底与 SPA 渲染
 	// =========================================================================
 	router.NoRoute(func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 
-		// 如果配置了前缀，只处理带前缀的路径
 		if urlPrefix != "" && !strings.HasPrefix(path, urlPrefix) {
 			ctx.Status(404)
 			return
 		}
 
-		// 解析实际的相对路径
 		relPath := strings.TrimPrefix(path, urlPrefix)
 		if !strings.HasPrefix(relPath, "/") {
 			relPath = "/" + relPath
 		}
 
-		// 拦截器：不该返回 index.html 的情况
-		// 如果该请求被识别为 API 请求、静态资源请求，或者是带有明确文件后缀（如 .js / .css / .png）的物理文件请求
-		// 都不应该返回 SPA 页面（会报前端 MIME 类型错误），而是直接掐断返回 404
 		hasAnyExt := false
 		if idx := strings.LastIndex(relPath, "."); idx > 0 && len(relPath)-idx < 6 {
-			// 简单判断是否有后缀（如 .js, .css）
 			hasAnyExt = true
 		}
 
@@ -112,7 +104,6 @@ func Setup(c *Controllers) *gin.Engine {
 			return
 		}
 
-		// 其他所有有效的前端页面路径（如 /tasks, /settings），都返回 index.html 交给 vue-router 处理
 		serveSPA(ctx, urlPrefix, 200)
 	})
 

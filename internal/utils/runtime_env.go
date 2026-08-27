@@ -82,6 +82,21 @@ func ShellEnvAssignment(key, value string) string {
 	return key + "='" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
 
+// ResolveAbsDataDir 解析 Baihu 运行时数据（Node 项目根）目录的绝对路径。
+func ResolveAbsDataDir() string {
+	if dataDir := os.Getenv("BH_DATA_DIR"); dataDir != "" {
+		if filepath.IsAbs(dataDir) {
+			return filepath.Clean(dataDir)
+		}
+		if absDataDir, err := filepath.Abs(dataDir); err == nil {
+			return absDataDir
+		}
+		return filepath.Clean(dataDir)
+	}
+
+	return constant.DataDir
+}
+
 // ResolveAbsScriptsDir 解析 Baihu 运行时脚本目录的绝对路径。
 func ResolveAbsScriptsDir() string {
 	if scriptsDir := os.Getenv("BH_SCRIPTS_DIR"); scriptsDir != "" {

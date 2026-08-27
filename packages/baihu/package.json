@@ -1,0 +1,31 @@
+{
+  "name": "baihu",
+  "version": "1.2.0",
+  "description": "Baihu Panel SDK for Node.js (Pure ESM, CommonJS & TypeScript)",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "node ./build.js"
+  },
+  "keywords": [
+    "baihu",
+    "scheduler",
+    "cron",
+    "sdk"
+  ],
+  "author": "uyloal",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

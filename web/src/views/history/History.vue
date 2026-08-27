@@ -36,16 +36,25 @@ let durationTimer: ReturnType<typeof setInterval> | null = null
 const isRefreshing = ref(false)
 
 // 监听实时任务事件
-useEventBus(Object.values(TASK_EVENTS), (payload, type) => {
-  const { log_id, status, duration, end_time } = payload
+useEventBus(Object.values(TASK_EVENTS), (payload: any, type) => {
+  if (!payload) return
+  const log_id = typeof payload === 'object' ? payload.log_id : undefined
+  const task_id = typeof payload === 'string' ? payload : payload.task_id
+  const status = typeof payload === 'object' ? payload.status : undefined
+  const duration = typeof payload === 'object' ? payload.duration : undefined
+  const end_time = typeof payload === 'object' ? payload.end_time : undefined
   
   // 查找列表中的记录并更新
-  const logItem = logs.value.find(l => l.id === log_id)
-  if (logItem) {
-    logItem.status = status
-    if (duration !== undefined) logItem.duration = duration
-    if (end_time !== undefined) logItem.end_time = end_time
-  } else if (type === TASK_EVENTS.RUNNING || status !== TASK_STATUS.RUNNING) {
+  if (log_id) {
+    const logItem = logs.value.find(l => l.id === log_id)
+    if (logItem && status) {
+      logItem.status = status
+      if (duration !== undefined) logItem.duration = duration
+      if (end_time !== undefined) logItem.end_time = end_time
+    }
+  }
+  
+  if (type === TASK_EVENTS.RUNNING || (status && status !== TASK_STATUS.RUNNING && status !== TASK_STATUS.PENDING)) {
     // 新任务启动或任务完成时，如果在第一页且无特定过滤，刷新列表以获取最新条目
     if (currentPage.value === 1 && !filterTaskId.value && !filterKeyword.value && (!filterStatus.value || filterStatus.value === 'all')) {
       loadLogs()
@@ -53,23 +62,25 @@ useEventBus(Object.values(TASK_EVENTS), (payload, type) => {
   }
   
   // 如果详情页打开的是这个记录，也同步更新
-  if (selectedLog.value && (selectedLog.value.id === log_id || selectedLog.value.task_id === payload.task_id)) {
-    selectedLog.value = {
-      ...selectedLog.value,
-      status: status,
-      duration: duration !== undefined ? duration : selectedLog.value.duration,
-      end_time: end_time !== undefined ? end_time : selectedLog.value.end_time
-    }
-    
-    // 如果任务完成了，停止详情页的轮询定时器并断开 SSE
-    if (status !== TASK_STATUS.RUNNING) {
-      if (durationTimer) {
-        clearInterval(durationTimer)
-        durationTimer = null
+  if (selectedLog.value && ((log_id && selectedLog.value.id === log_id) || (task_id && selectedLog.value.task_id === task_id))) {
+    if (status) {
+      selectedLog.value = {
+        ...selectedLog.value,
+        status: status,
+        duration: duration !== undefined ? duration : selectedLog.value.duration,
+        end_time: end_time !== undefined ? end_time : selectedLog.value.end_time
       }
-      if (logSource) {
-        logSource.close()
-        logSource = null
+      
+      // 如果任务完成了，停止详情页的轮询定时器并断开 SSE
+      if (status !== TASK_STATUS.RUNNING && status !== TASK_STATUS.PENDING) {
+        if (durationTimer) {
+          clearInterval(durationTimer)
+          durationTimer = null
+        }
+        if (logSource) {
+          logSource.close()
+          logSource = null
+        }
       }
     }
   }
@@ -278,9 +289,11 @@ async function selectLog(log: TaskLog) {
       }
       cleanupLogSocket()
       
-      const newStatus = parsed.status || 'success'
+      const newStatus = (parsed.status && parsed.status !== TASK_STATUS.RUNNING && parsed.status !== TASK_STATUS.PENDING)
+        ? parsed.status
+        : 'success'
       const newDuration = parsed.duration !== undefined ? parsed.duration : selectedLog.value?.duration || 0
-      const newEndTime = parsed.end_time || selectedLog.value?.end_time || '-'
+      const newEndTime = (parsed.end_time && parsed.end_time !== '-') ? parsed.end_time : new Date().toLocaleString()
 
       if (selectedLog.value) {
         selectedLog.value = {

@@ -1,25 +1,12 @@
 # 快速部署
 
-项目提供多种基础镜像，默认版本基于 Debian 12，集成了 Python 3.13 与 Node.js 23。
+白虎面板采用极简架构，基于 **Node.js 24 LTS + Alpine**，原生内置 pnpm 11.24。所有数据和脚本均在 `data/` (`baihu-data`) 目录下独立自包含管理，无需额外挂载 `envs` 或进行复杂的包管理器自定义设置。
 
-## 基础镜像选择
+## 基础镜像
 
 | 标签 (Tag) | 基础镜像 | 说明 |
 | :--- | :--- | :--- |
-| `latest` | Debian 12 | **默认推荐**：集成 Python 3.13 与 Node.js 23，开箱即用 |
-| `latest-debian13` | Debian 13 | 尝鲜版本，基于 Debian Trixie |
-| `latest-minimal` | Debian 13 | **最小化版**：不预置任何语言环境，仅内置 Mise，适合追求极致纯净的用户 |
-
-> **提示**：目前默认使用 `latest` 标签。如需切换环境，只需将镜像名后的 `latest` 替换为 `latest-minimal`（极致纯净）或 `latest-debian13` 即可。
-
-## 环境版本重构说明 (2026.02.13+)
-
-> **警告**：架构升级破坏性变更
-> 
-> 本版本（2026.02.13+）对底层运行时环境进行了彻底重构，弃用了原有的静态 Python/Node 环境，转为使用 **Mise** 进行动态版本管理。
-> 
-> 1. **不再提供 Alpine 镜像**：由于 glibc 兼容性问题，Mise 无法在 Alpine 上完美运行，因此暂时取消 Alpine 镜像支持。
-> 2. **环境数据不兼容**：如果您是从旧版本升级上来，原有的 Python/Node 环境数据将无法迁移。您需要清空挂载的 `envs/` 目录并让其由新容器自动初始化。
+| `latest` | Node.js 24 Alpine | **极简专属**：集成 Node.js 24 LTS 与 pnpm 11.24，极致轻量，开箱即用 |
 
 ---
 
@@ -33,7 +20,6 @@ docker run -d \
   --name baihu \
   -p 8052:8052 \
   -v $(pwd)/data:/app/data \
-  -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
   -e BH_SERVER_PORT=8052 \
   -e BH_SERVER_HOST=0.0.0.0 \
@@ -50,7 +36,6 @@ docker run -d \
   --name baihu \
   -p 8052:8052 \
   -v $(pwd)/data:/app/data \
-  -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
   -e BH_SERVER_PORT=8052 \
   -e BH_SERVER_HOST=0.0.0.0 \
@@ -81,7 +66,7 @@ services:
       - "8052:8052"
     volumes:
       - ./data:/app/data
-      - ./envs:/app/envs
+      - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
       - BH_SERVER_PORT=8052

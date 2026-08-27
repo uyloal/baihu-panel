@@ -24,15 +24,12 @@ type MigrationTable struct {
 func getMigrationTables() []MigrationTable {
 	return []MigrationTable{
 		{&models.User{}, "users", nil, nil},
-		{&models.Agent{}, "agents", nil, nil},
-		{&models.AgentToken{}, "tokens", nil, nil},
 		{&models.EnvironmentVariable{}, "envs", map[string]string{"UserID": "users"}, nil},
-		{&models.Task{}, "tasks", map[string]string{"AgentID": "agents"}, map[string]string{"Envs": "envs"}},
-		{&models.TaskLog{}, "task_logs", map[string]string{"TaskID": "tasks", "AgentID": "agents"}, nil},
+		{&models.Task{}, "tasks", nil, map[string]string{"Envs": "envs"}},
+		{&models.TaskLog{}, "task_logs", map[string]string{"TaskID": "tasks"}, nil},
 		{&models.Script{}, "scripts", map[string]string{"UserID": "users"}, nil},
 		{&models.Setting{}, "settings", nil, nil},
 		{&models.SendStats{}, "send_stats", map[string]string{"TaskID": "tasks"}, nil},
-		{&models.Language{}, "languages", nil, nil},
 		{&models.Dependency{}, "deps", nil, nil},
 	}
 }

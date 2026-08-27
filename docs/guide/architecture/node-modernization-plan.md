@@ -85,56 +85,41 @@ RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o baihu-server cmd/server/main.go
 # ================================
 # Stage 3: Minimal Production Image
 # ================================
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PNPM_HOME=/app/envs/pnpm
-ENV PNPM_STORE_DIR=/app/envs/pnpm-store
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PNPM_HOME=/root/.local/share/pnpm
+ENV PATH="/app/data/scripts/node_modules/.bin:$PNPM_HOME:/usr/local/bin:$PATH"
 
 RUN apk add --no-cache tzdata ca-certificates bash curl git openssh-client \
-    && corepack enable && corepack prepare pnpm@latest --activate \
-    && pnpm config set store-dir /app/envs/pnpm-store
+    && corepack enable && corepack prepare pnpm@11.24.0 --activate
 
-COPY --from=server-builder /app/baihu-server /usr/local/bin/baihu-server
-COPY builtin/ /www/builtin
+COPY --from=server-builder /app/baihu /usr/local/bin/baihu
+COPY packages/baihu /app/packages/baihu
 COPY docker/docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 8052
-VOLUME ["/app/data", "/app/envs"]
+VOLUME ["/app/data"]
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["baihu-server"]
 ```
 
-#### 2. 容器入口点初始化与软链桥接
+#### 2. 容器入口点初始化与数据自包含
 - **实现文件**：`docker/docker-entrypoint.sh`
 ```bash
-#!/bin/bash
+#!/bin/sh
 set -e
 
-export PNPM_HOME="/app/envs/pnpm"
-export PNPM_STORE_DIR="/app/envs/pnpm-store"
-export PATH="$PNPM_HOME:$PATH"
+# 初始化数据目录
+mkdir -p /app/data/scripts
 
-# 初始化数据与存储目录
-mkdir -p "$PNPM_HOME" "$PNPM_STORE_DIR" /app/data/scripts
+# 确保 scripts 工作区 package.json 与 baihu SDK 就绪
+cd /app/data/scripts
+pnpm install --prefer-offline 2>&1 || true
 
-# 确保全局启用 Corepack
-corepack enable >/dev/null 2>&1 || true
-
-# 建立用户脚本根目录的 node_modules 软链接（ESM/CJS 原生向上寻址，彻底摒弃 NODE_PATH）
-mkdir -p "$PNPM_HOME/global/5/node_modules"
-ln -sf "$PNPM_HOME/global/5/node_modules" /app/data/node_modules
-
-# 安装内置 SDK
-if [ -d "/www/builtin/nodejs" ]; then
-    pnpm add -g /www/builtin/nodejs >/dev/null 2>&1 || true
-fi
-
-exec "$@"
+exec /app/baihu server
 ```
 
 ---

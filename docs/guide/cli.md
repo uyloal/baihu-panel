@@ -15,7 +15,7 @@
 | [`baihu restore`](#baihu-restore) | 从本地 `.zip` 备份包全量恢复数据库与配置 | 系统迁移、灾难恢复 |
 | [`baihu webui`](#baihu-webui) | 管理、切换、重置第三方 WebUI 前端包 | 自定义主题包管理、界面回退 |
 | [`baihu depinstall`](#baihu-depinstall) | 智能分析执行日志并自动安装缺失的依赖包 | 脚本依赖报错快速排查与自动补齐 |
-| [`baihu builtininstall`](#baihu-builtininstall) | 为所有 Python / Node.js 运行时安装面板原生 SDK | 新增多版本解释器后一键注入 SDK |
+| [`baihu builtininstall`](#baihu-builtininstall) | 为 Node.js 数据项目安装面板原生 SDK | 项目初始化或重置后一键注入 SDK |
 | [`baihu completion`](#baihu-completion) | 生成 PowerShell / Bash / Zsh 的 Tab 自动补全脚本 | 提升终端交互与命令敲击体验 |
 | [`baihu version`](#baihu-version) | 查看当前二进制版本号 (同 `-v`, `-V`) | 环境排查、版本确认 |
 
@@ -423,32 +423,29 @@ baihu depinstall c0ab123456
 
 # 终端输出流程示例:
 # >> 分析结果: 从运行日志中检测到以下缺失依赖包：
-#    [python]: requests, bs4
+#    axios, lodash-es
 # >> 是否确认自动安装上述依赖包？(y/N): y
-# >> 正在安装 [requests] -> 执行指令: mise exec python@3.11 -- pip install requests
-# >> 【成功】依赖包 [requests] 安装成功！
+# >> 正在安装 [axios] -> 执行指令: cd "/app/data" && pnpm add axios
+# >> 【成功】依赖包 [axios] 安装成功！
 ```
 
 ---
 
 ## `baihu builtininstall`
 
-白虎面板内置了开箱即用的原生消息推送 SDK（支持 Python 的 `from baihu import notify` 与 Node.js 的 `const { notify } = require('baihu-notify')`）。
+白虎面板内置了开箱即用的原生助手库 `@baihu`（Node.js/TS 脚本中直接 `import { notify } from 'baihu'`）。
 
-当您在面板中通过 Mise 新增安装了新的 Python 或 Node.js 版本后，运行此命令可**自动为所有已安装的解释器版本全局注册注入 SDK**，无需手动重复 `pip install` 或 `npm install`。
+在数据工作区初始化或依赖环境重置后，运行此命令可通过 `pnpm add` **自动为数据项目安装/链接面板原生 SDK**。
 
 ### 场景与 Demo 示例
 ```bash
-# 为所有本地已安装的 Node.js 和 Python 版本批量注入白虎助手 SDK
+# 为 data 项目添加白虎助手 SDK
 baihu builtininstall
 
 # 输出示例:
-# >> [Builtin] 开始为 mise 环境安装内建包...
-# >> [Builtin] 正在为 node@20.10.0 安装内建包...
-# >> [Builtin] 为 node@20.10.0 安装成功
-# >> [Builtin] 正在为 python@3.11.8 安装内建包...
-# >> [Builtin] 为 python@3.11.8 安装成功
-# >> [Builtin] 内建包安装流程完成
+# >> [Builtin] 开始为 data 项目初始化与安装 baihu SDK...
+# >> [Builtin] 正在从本地路径引入 baihu: /app/packages/baihu
+# >> [Builtin] 内建 SDK 安装成功
 ```
 
 ---

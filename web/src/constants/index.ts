@@ -6,16 +6,18 @@ export const PATHS = {
   DATA_DIR: '/app/data',
   // 配置目录
   CONFIGS_DIR: '/app/configs',
-  // 环境目录
-  ENVS_DIR: '/app/envs',
   // 脚本目录占位符
   SCRIPTS_DIR_PLACEHOLDER: '$SCRIPTS_DIR$',
 } as const
 
 // 文件扩展名对应的运行命令
 export const FILE_RUNNERS: Record<string, string> = {
-  py: 'python',
   js: 'node',
+  mjs: 'node',
+  cjs: 'node',
+  ts: 'node',
+  mts: 'node',
+  cts: 'node',
   sh: 'bash',
   bash: 'bash',
 } as const

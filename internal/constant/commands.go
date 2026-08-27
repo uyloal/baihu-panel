@@ -51,7 +51,7 @@ var Commands = []CommandSpec{
 	},
 	{
 		Name:        "builtininstall",
-		Description: "为所有 mise 管理的 Node.js 和 Python 环境安装内建助手库",
+		Description: "为 scripts 工作区安装并链接内建 baihu SDK 助手库",
 	},
 	{
 		Name:        "depinstall",

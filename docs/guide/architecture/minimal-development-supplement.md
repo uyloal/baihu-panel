@@ -681,6 +681,8 @@ type Driver interface {
 }
 ```
 
+---
+
 ### 2. 核心渠道实现示例：Telegram Bot 驱动
 
 ```go
@@ -779,41 +781,16 @@ func TestExecutor_TimeoutTermination(t *testing.T) {
 
 ---
 
-## 九、pnpm CAS 存储架构与 Docker 卷挂载规范
+## 九、依赖管理与数据持久化架构规范
 
-### 1. 跨文件系统硬链接限制 (`EXDEV`) 规避原理
+### 1. 纯净单目录 (`baihu-data`) 自包含管理
 
-#### 架构挑战：
-当 `docker-compose.yml` 中将 `./data` 与 `./envs` 分别挂载到不同的宿主机物理分区或独立的 Docker 具名卷时，`pnpm` 尝试从全局 CAS 存储区（`/app/envs/pnpm-store`）向全局模块目录（`/app/envs/pnpm/global/5/node_modules`）或工作区建立硬链接时，Linux 内核会因跨物理设备/挂载点而拒绝硬链接创建，抛出 `EXDEV: cross-device link not permitted`。
+在白虎面板极简架构中，将 `/app/data` 作为标准的 Node.js 项目根目录，`scripts/` 目录保持纯净的脚本文件：
 
-#### 标准解决架构：
-
-```mermaid
-flowchart TD
-    subgraph Host ["宿主机数据目录 (同一物理分区)"]
-        H_DATA["./data/ (工作区代码与 SQLite 数据库)"]
-        H_ENVS["./envs/ (pnpm 全局 CAS 与二进制存储)"]
-        H_STORE["./envs/pnpm-store (CAS 实际文件存储)"]
-        H_GLOBAL["./envs/pnpm/global/5/node_modules"]
-    end
-
-    subgraph Container ["极简版容器内部 (/app)"]
-        C_DATA["/app/data ──> 挂载自 ./data/"]
-        C_ENVS["/app/envs ──> 挂载自 ./envs/"]
-        C_LINK["/app/data/node_modules ──(软链接)──> /app/envs/pnpm/global/5/node_modules"]
-    end
-
-    H_DATA --> C_DATA
-    H_ENVS --> C_ENVS
-    C_LINK -.->|同卷硬链接秒级创建| H_STORE
-```
-
-1. **同卷原则**：确保宿主机挂载的 `./data` 与 `./envs` 位于**同一物理文件系统分区**。
-2. **符号链接桥接**：容器启动时，由 Entrypoint 脚本在 `/app/data/node_modules` 创建指向 `/app/envs/pnpm/global/5/node_modules` 的软链接：
-   ```bash
-   ln -sf /app/envs/pnpm/global/5/node_modules /app/data/node_modules
-   ```
-3. **寻址效果**：用户无论在 `/app/data/scripts/a.js` 还是 `/app/data/scripts/sub/b.mjs` 中执行，Node.js 原生模块解析器沿着目录树向上递归时，均能在 `/app/data/node_modules` 命中所有全局安装的依赖，**ESM 与 CommonJS 100% 原生支持**。
+- **单卷持久化**：生产部署仅需挂载 `./data:/app/data`（以及可选的 `./configs:/app/configs`）；
+- **Node 项目根目录**：`/app/data` 包含 `package.json`、`pnpm-lock.yaml` 与 `node_modules/`，用户计划任务的所有依赖均通过 `pnpm add` 安装在此根目录下；
+- **纯净脚本工作区**：`/app/data/scripts/` 仅存放用户编写或拉取的脚本文件，无任何额外的包管理元文件干扰；
+- **Node 原生向上寻址**：Node.js 在 `/app/data/scripts/` 下执行任务时，天然向上递归至 `/app/data/node_modules/` 寻址依赖包，零额外配置支持 ESM 与 TypeScript。
 
 ---
 

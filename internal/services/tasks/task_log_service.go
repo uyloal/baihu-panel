@@ -35,60 +35,39 @@ type CleanConfig struct {
 	Keep int    `json:"keep"` // 保留天数或条数
 }
 
-// CreateEmptyLog 创建一个空的日志记录（任务开始时调用）
-func (s *TaskLogService) CreateEmptyLog(taskID string, command string) (*models.TaskLog, error) {
-	startTime := models.Now()
-	taskLog := &models.TaskLog{
-		ID:        utils.GenerateID(),
-		TaskID:    taskID,
-		Command:   models.BigText(command),
-		Status:    "running",
-		StartTime: &startTime,
-		CreatedAt: models.Now(),
+// CreateTaskLog 创建任务日志记录
+func (s *TaskLogService) CreateTaskLog(taskLog *models.TaskLog) error {
+	if taskLog.ID == "" {
+		taskLog.ID = utils.GenerateID()
 	}
-	if err := database.DB.Create(taskLog).Error; err != nil {
-		return nil, err
+	if taskLog.CreatedAt.Time().IsZero() {
+		taskLog.CreatedAt = models.Now()
 	}
-
-	// 任务开始时即更新任务的 last_run 为启动时间
-	database.DB.Model(&models.Task{}).Where("id = ?", taskID).Update("last_run", startTime)
-
-	return taskLog, nil
+	err := database.DB.Create(taskLog).Error
+	if err == nil && taskLog.StartTime != nil {
+		database.DB.Model(&models.Task{}).Where("id = ?", taskLog.TaskID).Update("last_run", taskLog.StartTime)
+	}
+	return err
 }
 
-// SaveTaskLog 保存或更新任务日志
-func (s *TaskLogService) SaveTaskLog(taskLog *models.TaskLog) error {
-	var err error
-	if taskLog.ID != "" {
-		// 先检查记录是否存在，如果不存在则创建，存在则更新
-		var count int64
-		database.DB.Model(&models.TaskLog{}).Where("id = ?", taskLog.ID).Count(&count)
-		if count > 0 {
-			err = database.DB.Model(taskLog).Where("id = ?", taskLog.ID).Updates(taskLog).Error
-		} else {
-			err = database.DB.Create(taskLog).Error
-		}
-	} else {
-		taskLog.ID = utils.GenerateID()
-		if taskLog.CreatedAt.Time().IsZero() {
-			taskLog.CreatedAt = models.Now()
-		}
-		err = database.DB.Create(taskLog).Error
-	}
-
+// GetTaskLogByID 根据 ID 获取任务日志
+func (s *TaskLogService) GetTaskLogByID(id string) (*models.TaskLog, error) {
+	var taskLog models.TaskLog
+	err := database.DB.Where("id = ?", id).First(&taskLog).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return &taskLog, nil
+}
 
-	// 更新任务的 last_run
-	// 更新任务的 last_run，优先使用日志记录的启动时间
-	lastRun := models.Now()
-	if taskLog.StartTime != nil {
-		lastRun = *taskLog.StartTime
-	}
-	database.DB.Model(&models.Task{}).Where("id = ?", taskLog.TaskID).Update("last_run", lastRun)
+// UpdateTaskLog 更新任务日志
+func (s *TaskLogService) UpdateTaskLog(taskLog *models.TaskLog) error {
+	return database.DB.Model(&models.TaskLog{}).Where("id = ?", taskLog.ID).Updates(taskLog).Error
+}
 
-	return nil
+// UpdateTaskStatus 更新任务日志状态
+func (s *TaskLogService) UpdateTaskStatus(logID string, status string) error {
+	return database.DB.Model(&models.TaskLog{}).Where("id = ?", logID).Update("status", status).Error
 }
 
 // UpdateTaskDuration 更新任务耗时（心跳）
@@ -96,7 +75,7 @@ func (s *TaskLogService) UpdateTaskDuration(logID string, duration int64) error 
 	return database.DB.Model(&models.TaskLog{}).Where("id = ?", logID).Update("duration", duration).Error
 }
 
-// UpdateLogCommand 更新日志中的命令内容（用于动态生成的命令脱敏）
+// UpdateLogCommand 更新日志中的命令内容
 func (s *TaskLogService) UpdateLogCommand(logID string, command string) error {
 	return database.DB.Model(&models.TaskLog{}).Where("id = ?", logID).Update("command", models.BigText(command)).Error
 }
@@ -110,8 +89,29 @@ func (s *TaskLogService) UpdateTaskStats(taskID string, status string) {
 	err := s.sendStatsService.IncrementStats(taskID, status)
 	if err != nil {
 		logger.Errorf("UpdateTaskStats err: %v", err)
-		return
 	}
+}
+
+// CleanLogsByDays 按天数清理历史日志
+func (s *TaskLogService) CleanLogsByDays(taskID string, days int) error {
+	if days <= 0 {
+		return nil
+	}
+	cutoff := systime.InCST(time.Now()).AddDate(0, 0, -days)
+	return database.DB.Where("task_id = ? AND created_at < ?", taskID, cutoff).Delete(&models.TaskLog{}).Error
+}
+
+// CleanLogsByCount 按条数清理历史日志
+func (s *TaskLogService) CleanLogsByCount(taskID string, keep int) error {
+	if keep <= 0 {
+		return nil
+	}
+	var boundaryLog models.TaskLog
+	res := database.DB.Where("task_id = ?", taskID).Order("id DESC").Offset(keep - 1).Limit(1).Find(&boundaryLog)
+	if res.Error == nil && res.RowsAffected > 0 {
+		return database.DB.Where("task_id = ? AND id < ?", taskID, boundaryLog.ID).Delete(&models.TaskLog{}).Error
+	}
+	return nil
 }
 
 // CleanTaskLogs 清理任务日志
@@ -156,61 +156,14 @@ func (s *TaskLogService) CleanTaskLogs(taskID string) {
 	}
 }
 
-// ProcessTaskCompletion 处理任务完成后的所有操作（保存日志、更新统计、清理旧日志）
+// ProcessTaskCompletion 处理任务完成后的所有操作
 func (s *TaskLogService) ProcessTaskCompletion(taskLog *models.TaskLog) error {
-	// 1. 保存/更新日志
-	if err := s.SaveTaskLog(taskLog); err != nil {
+	if err := s.UpdateTaskLog(taskLog); err != nil {
 		return err
 	}
-
-	// 2. 更新统计
 	s.UpdateTaskStats(taskLog.TaskID, taskLog.Status)
-
-	// 3. 异步清理旧日志
 	go s.CleanTaskLogs(taskLog.TaskID)
-
 	return nil
-}
-
-// CreateTaskLogFromAgentResult 从 Agent 结果创建任务日志
-func (s *TaskLogService) CreateTaskLogFromAgentResult(result *models.AgentTaskResult) (*models.TaskLog, error) {
-	// 裁剪并压缩输出
-	trimmedOutput := utils.TrimLog(result.Output, constant.MaxLogSize)
-	compressed, err := utils.CompressToBase64(trimmedOutput)
-	if err != nil {
-		logger.Errorf("[TaskLog] 压缩日志失败: %v", err)
-		compressed = ""
-	}
-
-	logID := result.LogID
-	if logID == "" {
-		logID = utils.GenerateID()
-	}
-
-	taskLog := &models.TaskLog{
-		ID:        logID,
-		TaskID:    result.TaskID,
-		AgentID:   &result.AgentID,
-		Command:   models.BigText(result.Command),
-		Output:    models.BigText(compressed),
-		Error:     models.BigText(result.Error),
-		Status:    result.Status,
-		Duration:  result.Duration,
-		ExitCode:  result.ExitCode,
-		CreatedAt: models.Now(),
-	}
-
-	// 处理开始和结束时间
-	if result.StartTime > 0 {
-		startTime := models.LocalTime(time.Unix(result.StartTime, 0))
-		taskLog.StartTime = &startTime
-	}
-	if result.EndTime > 0 {
-		endTime := models.LocalTime(time.Unix(result.EndTime, 0))
-		taskLog.EndTime = &endTime
-	}
-
-	return taskLog, nil
 }
 
 // CreateTaskLogFromLocalExecution 从本地执行结果创建任务日志
@@ -221,7 +174,6 @@ func (s *TaskLogService) CreateTaskLogFromLocalExecution(taskID string, command,
 	if isCompressed {
 		compressed = output
 	} else {
-		// 裁剪并压缩输出
 		trimmedOutput := utils.TrimLog(output, constant.MaxLogSize)
 		compressed, err = utils.CompressToBase64(trimmedOutput)
 		if err != nil {

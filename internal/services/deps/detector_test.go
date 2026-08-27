@@ -7,35 +7,24 @@ import (
 func TestDetectMissingDependencies(t *testing.T) {
 	tests := []struct {
 		name       string
-		language   string
 		logContent string
 		wantPkgs   []string
 		wantFound  bool
 	}{
 		{
-			name:       "Python ModuleNotFoundError",
-			language:   "python3",
-			logContent: "Traceback (most recent call last):\n  File \"main.py\", line 1, in <module>\n    import requests\nModuleNotFoundError: No module named 'requests'",
-			wantPkgs:   []string{"requests"},
-			wantFound:  true,
-		},
-		{
-			name:       "Python No module named",
-			language:   "python",
-			logContent: "ImportError: No module named yaml",
-			wantPkgs:   []string{"yaml"},
-			wantFound:  true,
-		},
-		{
 			name:       "Node Error Cannot find module",
-			language:   "node",
 			logContent: "Error: Cannot find module 'axios'\nRequire stack:\n- /app/index.js",
 			wantPkgs:   []string{"axios"},
 			wantFound:  true,
 		},
 		{
+			name:       "Node Error Cannot find package",
+			logContent: "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'cheerio' imported from /app/scripts/task.mjs",
+			wantPkgs:   []string{"cheerio"},
+			wantFound:  true,
+		},
+		{
 			name:       "No match",
-			language:   "python",
 			logContent: "Success running script",
 			wantPkgs:   nil,
 			wantFound:  false,
@@ -44,7 +33,7 @@ func TestDetectMissingDependencies(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPkgs, gotFound := DetectMissingDependencies(tt.language, tt.logContent)
+			gotPkgs, gotFound := DetectMissingDependencies(tt.logContent)
 			if gotFound != tt.wantFound {
 				t.Errorf("DetectMissingDependencies() gotFound = %v, want %v", gotFound, tt.wantFound)
 			}

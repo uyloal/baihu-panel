@@ -9,17 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
-import { Plus, X, ChevronDown, Search, AlertCircle, Terminal, Zap, Lock, Variable, Wrench } from 'lucide-vue-next'
+import { Plus, X, ChevronDown, Search, Terminal, Zap, Lock, Variable } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { api, type Task, type EnvVar, type Agent } from '@/api'
+import { api, type Task, type EnvVar } from '@/api'
 import { PATHS, TRIGGER_TYPE } from '@/constants'
 import { toast } from 'vue-sonner'
 
 import TaskNotificationConfig from './components/TaskNotificationConfig.vue'
 import TaskAdvancedConfig from './components/TaskAdvancedConfig.vue'
 import TaskCronConfig from './components/TaskCronConfig.vue'
-import TaskLangConfig from './components/TaskLangConfig.vue'
 import TaskTagsConfig from './components/TaskTagsConfig.vue'
 
 const props = defineProps<{
@@ -33,38 +32,19 @@ const emit = defineEmits<{
   'saved': []
 }>()
 
-
-
 const form = ref<Partial<Task>>({})
 const allEnvVars = ref<EnvVar[]>([])
-const allAgents = ref<Agent[]>([])
 const selectedEnvIds = ref<string[]>([])
-const selectedAgentId = ref<string>('local')
 const selectedTriggerType = ref<string>('cron')
 const envSearchQuery = ref('')
-// 为每个执行位置保存独立的工作目录配置
-const workDirCache = ref<Record<string, string>>({})
+const currentWorkDir = ref('')
 const commentToTaskEnabled = ref(false)
 const allEnvsEnabled = ref(false)
 const scriptsDir = ref<string>(PATHS.SCRIPTS_DIR)
 
-
-
-
 function onAllEnvsChange(val: boolean) {
   allEnvsEnabled.value = val
 }
-
-
-
-// 当前显示的工作目录（根据选择的执行位置）
-const currentWorkDir = computed({
-  get: () => workDirCache.value[selectedAgentId.value] || '',
-  set: (val: string) => {
-    workDirCache.value[selectedAgentId.value] = val
-  }
-})
-
 
 const filteredEnvVars = computed(() => {
   return allEnvVars.value.filter((env: EnvVar) => {
@@ -84,14 +64,6 @@ const selectedEnvs = computed(() => {
     .filter((e): e is EnvVar => e !== undefined)
 })
 
-const onlineAgents = computed(() => {
-  return allAgents.value.filter((a: Agent) => a.enabled)
-})
-
-
-
-const selectedLangs = ref<{ name: string; version: string; availableVersions: string[] }[]>([])
-
 const notificationConfigRef = ref<InstanceType<typeof TaskNotificationConfig> | null>(null)
 
 watch(() => props.open, async (val: boolean) => {
@@ -106,79 +78,44 @@ watch(() => props.open, async (val: boolean) => {
       post_command: props.task?.post_command ?? '',
       ...props.task
     }
-    // 配置清理会在 TaskAdvancedConfig 中自动处理
-    // 解析任务配置
+    
     try {
-      // 确保 config 是有效的 JSON 对象字符串
-      let configStr = props.task?.config
-      // 如果是 null/undefined 或者空字符串，初始化为 '{}'
-      if (!configStr) {
-        configStr = '{}'
-      }
-
+      let configStr = props.task?.config || '{}'
       const parsed = JSON.parse(configStr)
-      // 确保解析结果是对象
       if (parsed && typeof parsed === 'object') {
-
-        // 解析全部环境变量配置
         allEnvsEnabled.value = !!parsed['$task_all_envs']
-        // 解析注释解析配置
         commentToTaskEnabled.value = !!parsed['$task_comment_to_task']
       } else {
         allEnvsEnabled.value = false
         commentToTaskEnabled.value = false
       }
     } catch {
-      // ignore
+      allEnvsEnabled.value = false
+      commentToTaskEnabled.value = false
     }
-    // 解析环境变量
+
     if (props.task?.envs) {
       selectedEnvIds.value = props.task.envs.split(',').map((s: string) => s.trim()).filter(Boolean)
     } else {
       selectedEnvIds.value = []
     }
-    // 解析语言环境
-    selectedLangs.value = []
-    if (props.task?.languages && Array.isArray(props.task.languages)) {
-      selectedLangs.value = props.task.languages.map((l: any) => ({
-        name: l.name || '',
-        version: l.version || '',
-        availableVersions: []
-      }))
-    }
 
-    // 解析 Agent 和工作目录
-    const agentId = props.task?.agent_id ? String(props.task.agent_id) : 'local'
-    selectedAgentId.value = agentId
-    // 解析触发类型
     selectedTriggerType.value = props.task?.trigger_type || TRIGGER_TYPE.CRON
-    // 初始化工作目录缓存，将当前任务的工作目录保存到对应的执行位置
-    workDirCache.value = {
-      [agentId]: props.task?.work_dir || ''
-    }
     envSearchQuery.value = ''
-    // 加载数据
     await loadData()
-    workDirCache.value = {
-      [agentId]: agentId === 'local'
-        ? normalizeLocalWorkDirForDisplay(props.task?.work_dir)
-        : (props.task?.work_dir || '')
-    }
+    currentWorkDir.value = normalizeLocalWorkDirForDisplay(props.task?.work_dir)
 
-    // 加载通知配置
     await notificationConfigRef.value?.loadConfig(props.isEdit ? props.task?.id : undefined)
   }
 })
 
 async function loadData() {
   try {
-    const [envs, agents, paths] = await Promise.all([
+    const [envs, paths] = await Promise.all([
       api.env.all(),
-      api.agents.list(),
       api.settings.getPaths().catch(() => ({ scripts_dir: PATHS.SCRIPTS_DIR }))
     ])
     allEnvVars.value = envs
-    allAgents.value = agents
     scriptsDir.value = paths?.scripts_dir || PATHS.SCRIPTS_DIR
   } catch { /* ignore */ }
 }
@@ -226,18 +163,8 @@ async function save() {
     form.value.envs = selectedEnvIds.value.join(',')
     form.value.type = 'task'
     form.value.trigger_type = selectedTriggerType.value
-    form.value.agent_id = selectedAgentId.value === 'local' ? null : selectedAgentId.value
 
-    // 保存语言环境配置
-    form.value.languages = selectedLangs.value.map((l: { name: string; version: string }) => ({
-      name: l.name,
-      version: l.version
-    }))
-
-    // 保存配置 - 确保 concurrency 字段被正确保存
     let config: Record<string, any> = {}
-
-    // 如果 form.value.config 存在，先解析它以保留其他配置
     if (form.value.config) {
       try {
         const parsed = JSON.parse(form.value.config)
@@ -249,18 +176,10 @@ async function save() {
       }
     }
 
-    // 更新注入全部环境变量字段
     config['$task_all_envs'] = !!allEnvsEnabled.value
-    // 更新注释解析字段
     config['$task_comment_to_task'] = !!commentToTaskEnabled.value
-
-    // 重新序列化配置
     form.value.config = JSON.stringify(config)
-
-    // 保存当前选择的执行位置对应的工作目录
-    form.value.work_dir = selectedAgentId.value === 'local'
-      ? encodeLocalWorkDir(currentWorkDir.value)
-      : currentWorkDir.value
+    form.value.work_dir = encodeLocalWorkDir(currentWorkDir.value)
 
     if (props.isEdit && form.value.id) {
       const task = await api.tasks.update(form.value.id, form.value)
@@ -309,35 +228,19 @@ async function save() {
                   <Input v-model="form.remark" placeholder="输入任务备注信息 (可选)" :class="cn('sm:col-span-3 h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50', form.remark ? 'text-sm font-medium' : 'text-[11px] font-normal')" />
                 </div>
                 <TaskTagsConfig v-model="form.tags" />
-                <!-- 执行位置与触发方式 (大屏保持原样，小屏并排展示优化) -->
-                <div class="grid grid-cols-2 sm:grid-cols-1 gap-2.5 sm:gap-5">
-                  <div class="grid sm:grid-cols-4 items-center gap-1 sm:gap-3 min-w-0">
-                    <Label class="sm:text-right text-[11px] sm:text-xs text-foreground/70 uppercase tracking-wider font-semibold truncate">执行位置</Label>
-                    <div class="sm:col-span-3 min-w-0">
-                      <Select v-model="selectedAgentId">
-                        <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-[11px] sm:text-sm min-w-0">
-                          <SelectValue placeholder="选择..." class="truncate" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="local" class="text-xs sm:text-sm"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500" /><span>本地执行</span></div></SelectItem>
-                          <SelectItem v-for="agent in onlineAgents" :key="agent.id" :value="String(agent.id)" class="text-xs sm:text-sm"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full" :class="agent.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground'" /><span>{{ agent.name }}</span></div></SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div class="grid sm:grid-cols-4 items-center gap-1 sm:gap-3 min-w-0">
-                    <Label class="sm:text-right text-[11px] sm:text-xs text-foreground/70 uppercase tracking-wider font-semibold truncate">触发方式</Label>
-                    <div class="sm:col-span-3 min-w-0">
-                      <Select v-model="selectedTriggerType">
-                        <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-[11px] sm:text-sm min-w-0">
-                          <SelectValue class="truncate" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem :value="TRIGGER_TYPE.CRON" class="text-xs sm:text-sm">⏳ 定时周期</SelectItem>
-                          <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP" class="text-xs sm:text-sm">🚀 系统启动</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">触发方式</Label>
+                  <div class="sm:col-span-3 min-w-0">
+                    <Select v-model="selectedTriggerType">
+                      <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-xs sm:text-sm min-w-0">
+                        <SelectValue class="truncate" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem :value="TRIGGER_TYPE.CRON" class="text-xs sm:text-sm">⏳ 定时周期</SelectItem>
+                        <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP" class="text-xs sm:text-sm">🚀 系统启动</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -350,36 +253,13 @@ async function save() {
                 <h3 class="text-sm font-bold text-foreground/90">执行配置</h3>
               </div>
               <div class="grid gap-5 pl-3 border-l border-muted">
-                <template v-if="selectedAgentId === 'local'">
-                  <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3">
-                    <div class="sm:col-span-1" />
-                    <div class="sm:col-span-3">
-                      <div class="flex flex-col gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] leading-relaxed font-medium">
-                        <div class="flex items-center gap-2.5">
-                          <AlertCircle class="h-4 w-4 shrink-0 text-amber-500" />
-                          <p>请先在<b>「语言依赖」</b>中安装所需的运行时。执行脚本时将自动注入该环境。</p>
-                        </div>
-                        <div class="flex items-center gap-2.5 mt-1 border-t border-amber-500/10 pt-1.5">
-                          <Wrench class="h-4 w-4 shrink-0 text-amber-500" />
-                          <p><b>依赖自动补全：</b>若执行报错提示缺失包（如 requests 等），可在任务列表的<b>「操作菜单」</b>中点击<b>「补全依赖」</b>进行一键安装。</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3 mt-2">
-                    <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold pt-2.5">语言环境</Label>
-                    <div class="sm:col-span-3 space-y-2">
-                      <TaskLangConfig v-model="selectedLangs" />
-                    </div>
-                  </div>
-                </template>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">前置指令</Label>
                   <div class="sm:col-span-3 relative"><Input v-model="form.pre_command" placeholder="执行主命令前运行的指令 (可选)" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50 pr-10', form.pre_command ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /><Zap class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40 pointer-events-none" /></div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">核心命令</Label>
-                  <div class="sm:col-span-3 relative"><Input v-model="form.command" placeholder="例如: python main.py --args" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50 pr-10', form.command ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /><Terminal class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40 pointer-events-none" /></div>
+                  <div class="sm:col-span-3 relative"><Input v-model="form.command" placeholder="例如: node index.js 或 ts-node test.ts" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50 pr-10', form.command ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /><Terminal class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40 pointer-events-none" /></div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">后置指令</Label>
@@ -387,7 +267,7 @@ async function save() {
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">工作目录</Label>
-                  <div class="sm:col-span-3"><DirTreeSelect v-if="selectedAgentId === 'local'" v-model="currentWorkDir" class="h-9" /><Input v-else v-model="currentWorkDir" placeholder="任务运行路径（留空取 Agent 默认值）" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50', currentWorkDir ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /></div>
+                  <div class="sm:col-span-3"><DirTreeSelect v-model="currentWorkDir" class="h-9" /></div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3 pb-1">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">变量注入</Label>
@@ -495,4 +375,3 @@ async function save() {
   letter-spacing: 0.01em;
 }
 </style>
-

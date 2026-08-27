@@ -53,10 +53,6 @@ func (s *BackupService) getTableConfigs() []tableConfig {
 		{"scripts.json", s.exportTable(&[]models.Script{}), s.restoreTable(&[]models.Script{})},
 		{"settings.json", s.exportSettings, s.restoreSettings},
 		{"send_stats.json", s.exportTable(&[]models.SendStats{}), s.restoreTable(&[]models.SendStats{})},
-
-		{"agents.json", s.exportTable(&[]models.Agent{}), s.restoreTable(&[]models.Agent{})},
-		{"tokens.json", s.exportTable(&[]models.AgentToken{}), s.restoreTable(&[]models.AgentToken{})},
-		{"languages.json", s.exportTable(&[]models.Language{}), s.restoreTable(&[]models.Language{})},
 		{"deps.json", s.exportTable(&[]models.Dependency{}), s.restoreTable(&[]models.Dependency{})},
 		{"notify_ways.json", s.exportTable(&[]models.NotifyWay{}), s.restoreTable(&[]models.NotifyWay{})},
 		{"notify_bindings.json", s.exportTable(&[]models.NotifyBinding{}), s.restoreTable(&[]models.NotifyBinding{})},
@@ -232,9 +228,6 @@ func (s *BackupService) Restore(zipPath string) error {
 		tx.Where("section != ?", BackupSection).Delete(&models.Setting{})
 		tx.Where("1=1").Delete(&models.SendStats{})
 
-		tx.Where("1=1").Delete(&models.Agent{})
-		tx.Where("1=1").Delete(&models.AgentToken{})
-		tx.Where("1=1").Delete(&models.Language{})
 		tx.Where("1=1").Delete(&models.Dependency{})
 		tx.Where("1=1").Delete(&models.NotifyWay{})
 		tx.Where("1=1").Delete(&models.NotifyBinding{})
@@ -336,12 +329,6 @@ func (s *BackupService) restoreFromZipFile(tx *gorm.DB, f *zip.File, filename st
 	case "send_stats.json":
 		return restoreStreamBatch[models.SendStats](tx, decoder)
 
-	case "agents.json":
-		return restoreStreamBatch[models.Agent](tx, decoder)
-	case "tokens.json":
-		return restoreStreamBatch[models.AgentToken](tx, decoder)
-	case "languages.json":
-		return restoreStreamBatch[models.Language](tx, decoder)
 	case "deps.json":
 		return restoreStreamBatch[models.Dependency](tx, decoder)
 	case "notify_ways.json":

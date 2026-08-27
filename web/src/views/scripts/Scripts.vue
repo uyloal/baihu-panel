@@ -134,12 +134,27 @@ const editorLanguage = computed(() => {
 })
 
 // 编辑器挂载时的回调
-function handleEditorMount(editor: any) {
+function handleEditorMount(editor: any, monaco?: any) {
   editorRef.value = editor
   // 强制设置换行符为 LF
   const model = editor.getModel()
   if (model) {
     model.setEOL(0) // 0 = LF, 1 = CRLF
+  }
+  const ts = monaco?.languages?.typescript
+  if (ts) {
+    const compilerOptions = {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      allowNonTsExtensions: true,
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+      allowJs: true,
+      checkJs: false
+    }
+    ts.typescriptDefaults.setCompilerOptions(compilerOptions)
+    ts.javascriptDefaults.setCompilerOptions(compilerOptions)
   }
 }
 

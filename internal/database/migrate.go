@@ -22,15 +22,11 @@ var allModels = []interface{}{
 	&models.Setting{},
 	&models.SendStats{},
 	&models.Dependency{},
-	&models.Agent{},
-	&models.AgentToken{},
-	&models.Language{},
 	&models.NotifyWay{},
 	&models.NotifyBinding{},
 	&models.NotifyFilter{},
 	&models.DataRelation{},
 	&models.DataStorage{},
-	&models.InterconnectNode{},
 }
 
 func Migrate() error {
@@ -114,15 +110,6 @@ func getModelSignature(models []interface{}) string {
 
 // preMigrations 前置结构迁移，处理 AutoMigrate 无法自动解决的变更
 func preMigrations() error {
-	// 检查 ql_tokens 表是否存在
-	if DB.Migrator().HasTable(constant.TableMigrateQlTokens) {
-		// 如果 code 列存在，且 token 列不存在，则重命名
-		if DB.Migrator().HasColumn(&models.AgentToken{}, constant.ColumnMigrateQlTokenCode) {
-			if err := DB.Migrator().RenameColumn(&models.AgentToken{}, constant.ColumnMigrateQlTokenCode, constant.ColumnMigrateQlTokenToken); err != nil {
-				logger.Debugf("[Database] 重命名 ql_tokens.code 失败: %v", err)
-			}
-		}
-	}
 	// 移除 deps 表中的 type 字段（如果存在）
 	if DB.Migrator().HasColumn(&models.Dependency{}, constant.ColumnMigrateDependencyType) {
 		if err := DB.Migrator().DropColumn(&models.Dependency{}, constant.ColumnMigrateDependencyType); err != nil {

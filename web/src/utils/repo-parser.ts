@@ -113,19 +113,6 @@ export function parseBaihuCommand(command: string): ParsedRepoResult | null {
       case '--task-timeout':
         task.timeout = parseInt(value) || 30
         break
-      case '--task-langs':
-        try {
-          const langs = JSON.parse(value)
-          if (Array.isArray(langs)) {
-            task.languages = langs.map(l => ({
-              name: l.name || '',
-              version: l.version || ''
-            }))
-          }
-        } catch (e) {
-          console.error('Parse task-langs failed', e)
-        }
-        break
       case '--repo-name':
         repoConfig.repo_dir_name = value
         break
@@ -257,10 +244,6 @@ export function generateBaihuCommand(task: Task): string {
     }
     if (task.timeout !== undefined && task.timeout !== 30) {
       args.push('--task-timeout', String(task.timeout))
-    }
-    if (task.languages && task.languages.length > 0) {
-      const langs = task.languages.map(l => ({ name: l.name, version: l.version }))
-      args.push('--task-langs', JSON.stringify(langs))
     }
 
     // 转义并加引号（仅在包含特殊字符或为空时加引号，提升指令可读性）

@@ -35,9 +35,9 @@ baihu-panel提供了两种不同层面的通知推送方式，满足从“自动
 
 ---
 
-### 路径二：脚本手动调用 (内置助手库 - 推荐)
+### 路径二：脚本直接调用 (内置助手库 `@baihu` - 推荐)
 
-baihu-panel提供了一套**零配置**的内建助手库（Built-in SDK），支持 Python 和 Node.js。除了支持极简的消息通知投递外，它还支持管理面板的**环境变量**与**定时任务控制**。
+白虎面板提供了一套**零配置**的内建助手库（`@baihu`），支持 Node.js (ESM / CommonJS / TypeScript)。除了支持极简的消息通知投递外，还支持管理面板的环境变量与定时任务控制。
 
 #### 1. 如何获取配置 Key？
 在使用助手库前，请确保您已经在任务设置的“环境变量”或“机密”中配置了以下对应 Key：
@@ -49,62 +49,36 @@ baihu-panel提供了一套**零配置**的内建助手库（Built-in SDK），�
   - `BHPKG_OPENAPI_TOKEN` (或 `OPENAPI_TOKEN`)：OpenAPI 鉴权 Token，在「系统设置」->「OpenAPI」中生成。
   - `BHPKG_OPENAPI_URL` (可选)：默认为本地面板 API 地址。
 
-#### 2. 环境初始化
-在开始编写脚本前，您需要在终端执行以下命令，为面板管理的所有语言环境安装 `baihu` 包：
+#### 2. 代码示例
 
-```bash
-baihu builtininstall
-```
-*该操作会将助手库安装到 mise 管理的所有版本中，确保 import 成功。*
-
-#### 3. 代码示例
-
-##### Python (同步调用)
-```python
-import baihu
-
-# 基本消息通知
-baihu.notify("任务标题", "通知正文内容")
-
-# 指定内容格式（text/markdown/html）
-baihu.notify("任务标题", "**加粗内容**", format='markdown')
-
-# 指定渠道
-baihu.notify("任务标题", "正文", channel_id='ch-xxx')
-
-# 完整参数
-baihu.notify("任务标题", "<b>粗体</b>", format='html', channel_id='ch-xxx')
-
-# 环境变量与任务管理（详细用法见内置库示例）
-envs = baihu.get_envs()
-tasks = baihu.get_tasks()
-```
-
-##### Node.js (异步调用)
-```javascript
-const baihu = require('baihu');
+##### TypeScript / ESM (原生支持)
+```typescript
+import { notify, getEnvs, getTasks } from 'baihu'
 
 // 基本消息通知
-baihu.notify("任务标题", "通知正文内容");
+await notify("任务标题", "通知正文内容")
 
 // 指定内容格式（text/markdown/html）
-baihu.notify("任务标题", "**加粗内容**", { format: "markdown" });
+await notify("任务标题", "**加粗内容**", { format: "markdown" })
 
 // 指定渠道
-baihu.notify("任务标题", "正文", { channel_id: "ch-xxx" });
+await notify("任务标题", "正文", { channel_id: "ch-xxx" })
 
-// 完整参数
-baihu.notify("任务标题", "<b>粗体</b>", { format: "html", channel_id: "ch-xxx" });
-
-// 环境变量与任务管理（详细用法见内置库示例）
-(async () => {
-    const envs = await baihu.getEnvs();
-    const tasks = await baihu.getTasks();
-})();
+// 环境变量与任务管理
+const envs = await getEnvs()
+const tasks = await getTasks()
 ```
 
-> [!TIP]
-> 关于环境变量增删改查以及任务触发控制的完整 API 列表与更详尽的代码，请参考 [内置库示例](./examples/builtin.md)。
+##### CommonJS
+```javascript
+const { notify, getEnvs, getTasks } = require('baihu')
+
+async function main() {
+  await notify("任务标题", "通知正文内容")
+  const envs = await getEnvs()
+}
+main()
+```
 
 
 ---

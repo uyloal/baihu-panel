@@ -19,7 +19,6 @@ import (
 	"github.com/uyloal/baihu-panel/internal/models/vo"
 	"github.com/uyloal/baihu-panel/internal/services"
 	"github.com/uyloal/baihu-panel/internal/services/tasks"
-	"github.com/uyloal/baihu-panel/internal/tunnel"
 	"github.com/uyloal/baihu-panel/internal/utils"
 
 	"github.com/gin-gonic/gin"
@@ -581,13 +580,6 @@ func (sc *SettingsController) UpdateSectionSettings(c *gin.Context) {
 	if err := sc.settingsService.SetSection(section, values); err != nil {
 		utils.ServerError(c, "更新失败")
 		return
-	}
-
-	// 当互联配置发生改变时，通知 tunnel 模块立刻应用新角色，启动或停止相关的后台协程
-	if section == constant.SectionInterconnect {
-		if role, ok := values[constant.KeyInterconnectRole]; ok {
-			tunnel.ApplyRole(role)
-		}
 	}
 
 	utils.SuccessMsg(c, "保存成功")

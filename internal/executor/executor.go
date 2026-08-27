@@ -28,15 +28,12 @@ type Task interface {
 	GetWorkDir() string
 	GetEnvs() string
 	GetEnvVars() []string
-	GetLanguages() []map[string]string
-	GetUseMise() bool
 }
 
 // CronTask 计划任务接口
 type CronTask interface {
 	Task
 	GetSchedule() string
-	UseMise() bool
 	GetSecrets() []string
 	GetRandomRange() int
 }
@@ -49,8 +46,6 @@ type Request struct {
 	WorkDir     string
 	Envs        []string
 	Timeout     int // 任务超时时间（分钟）
-	Languages   []map[string]string
-	UseMise     bool
 }
 
 // Result 任务执行结果
@@ -141,13 +136,6 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	}
 	defer cancel()
 
-	// 如果指定使用 mise，则预先构建好带 mise 的命令，这样 PreExecute 记录的就是完整命令
-	if req.UseMise {
-		utils.InjectNodePath(&req.Envs, req.Languages)
-		req.Command = utils.BuildMiseCommand(req.Command, req.Languages)
-		req.UseMise = false
-	}
-
 	// 组合指令（如果存在前置或后置指令）
 	if req.PreCommand != "" || req.PostCommand != "" {
 		finalCmd := ""
@@ -184,17 +172,16 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	SetProcessGroupAndCancel(cmd, usePty)
 
 	if !usePty {
-		// 在 Windows 平台（或非交互式管道下）将 Stdin 重定向到空 Reader
-		// 避免运行 bat 或命令时因为读取 stdin（例如 pause、set /p 等）而无限挂起
 		cmd.Stdin = strings.NewReader("")
 	}
 
-	// 设置工作目录
+	// 设置工作目录（默认使用 scripts 目录）
 	workDir := strings.TrimSpace(req.WorkDir)
 	if workDir != "" {
 		cmd.Dir = workDir
 	} else {
-		workDir, _ = os.Getwd()
+		cmd.Dir = constant.ScriptsWorkDir
+		workDir = constant.ScriptsWorkDir
 	}
 
 	// 设置环境变量（始终继承系统环境变量）
@@ -202,14 +189,24 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	if len(req.Envs) > 0 {
 		cmd.Env = append(cmd.Env, req.Envs...)
 	}
-	// 针对 Windows 平台修复 PATH 优先级，避免 GNU/MSYS 命令行冲突
+	// 针对 Windows 平台修复 PATH 优先级
 	cmd.Env = windows.FixPathEnv(cmd.Env)
-	// 强制注入终端环境标识及禁用输出缓冲的标志
+	// 注入 Node 与终端环境优化参数
 	cmd.Env = append(cmd.Env,
 		"TERM=xterm",
-		"PYTHONUNBUFFERED=1",
 		"NODE_NO_WARNINGS=1",
 	)
+
+	hasNodeOptions := false
+	for _, e := range cmd.Env {
+		if strings.HasPrefix(e, "NODE_OPTIONS=") {
+			hasNodeOptions = true
+			break
+		}
+	}
+	if !hasNodeOptions {
+		cmd.Env = append(cmd.Env, "NODE_OPTIONS=--experimental-strip-types --max-old-space-size=512")
+	}
 
 	var pipeReader *os.File
 	var pipeWriter *os.File
@@ -219,12 +216,6 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	var started bool
 	// 尝试开启 PTY 模式（Unix/macOS 且输出合并时）
 	if !windows.IsWindows() && stdout != nil && (stdout == stderr || stdout == io.Discard) {
-		// 强制注入终端环境标识及禁用输出缓冲的标志，确保 PTY 模式下最佳实时性能
-		cmd.Env = append(cmd.Env,
-			"TERM=xterm",
-			"PYTHONUNBUFFERED=1",
-			"NODE_NO_WARNINGS=1",
-		)
 		f, ptyErr := pty.Start(cmd)
 		if ptyErr == nil {
 			logger.Infof("[Executor] #%s 启动于 PTY 模式", logID)
@@ -233,14 +224,11 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 			copyDone = make(chan struct{})
 			go func() {
 				defer close(copyDone)
-				// io.Copy 对于 PTY 来说是最稳健且即时的流式拷贝
 				io.Copy(stdout, f)
 				f.Close()
 			}()
 		} else {
 			logger.Warnf("[Executor] 任务 #%s PTY 启动失败，正在回退至管道(Pipe)模式: %v", logID, ptyErr)
-			// PTY 启动失败时，由于 cmd.Start() 已经在 pty.Start 内部被调用，cmd 状态已变为已启动。
-			// 我们必须在此处重新构建一个新的 cmd 实例，并重新拷贝原 cmd 的所有属性，以便后续 Pipe 模式能正常启动。
 			newCmd := exec.CommandContext(execCtx, shell, args...)
 			newCmd.Stdin = strings.NewReader("")
 			if workDir != "" {
@@ -253,10 +241,8 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	}
 
 	if !started {
-		// 如果 stdout 和 stderr 指针不一致，但在逻辑上我们知道它们是同一个 MultiWriter，
-		// 这里会显示为 Pipe 模式。
 		if stdout != stderr && stdout != io.Discard {
-			logger.Debugf("[Executor] 任务 #%d stdout (%p) 和 stderr (%p) 不同，回退到 Pipe 模式。", logID, stdout, stderr)
+			logger.Debugf("[Executor] 任务 #%s stdout 和 stderr 不同，回退到 Pipe 模式。", logID)
 		}
 		logger.Infof("[Executor] #%s 启动于 Pipe 模式", logID)
 		if stdout != nil && stdout == stderr {
@@ -281,7 +267,6 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 			cmd.Stderr = stderr
 		}
 
-		// 使用 cmd.Start() + Wait() 以便在后台处理心跳
 		err = cmd.Start()
 		if err != nil {
 			if pipeWriter != nil {
@@ -290,19 +275,16 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 			if pipeReader != nil {
 				pipeReader.Close()
 			}
-			// 仅在进程拉起失败时向日志写入诊断信息
 			writeDiagnosticError(stdout, start, workDir, req.Command, usePty, fmt.Sprintf("进程 fork/exec 启动失败: %v", err), 1, "")
 
-			// 启动失败的处理
 			end := time.Now()
 			result := &Result{
 				Status:    constant.TaskStatusFailed,
 				Duration:  end.Sub(start).Milliseconds(),
 				ExitCode:  1,
-				StartTime: start, // 记录开始时间
+				StartTime: start,
 				EndTime:   end,
 			}
-			// 执行后钩子
 			if hooks != nil {
 				result.Output += "\n[系统错误] " + err.Error()
 				hooks.PostExecute(ctx, logID, result)
@@ -310,18 +292,14 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 			return result, err
 		}
 
-		// 在父进程中关闭写端，这样子进程退出后 pr 才会收到 EOF
 		if pipeWriter != nil {
 			pipeWriter.Close()
 		}
-	} else {
-		// PTY 模式下 cmd.Start() 已经在 pty.Start(cmd) 中调用过了
 	}
 
 	// 启动心跳协程
 	done := make(chan struct{})
 	go func() {
-		// 每3秒一次心跳
 		ticker := time.NewTicker(3 * time.Second)
 		defer ticker.Stop()
 		for {
@@ -340,14 +318,12 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	err = cmd.Wait()
 	close(done) // 停止心跳
 
-	// PTY 模式下需要显式关闭
+	// PTY 模式下显式关闭
 	if ptyFile != nil {
 		ptyFile.Close()
 	}
 
 	// 强制关闭管道读端
-	// 避免子进程如果启动了后台服务进程，继承并保持了 stdout/stderr 句柄不释放，
-	// 导致 io.Copy 处于无限阻塞状态，从而使 copyDone 无法收到信号，整个执行流程卡死。
 	if pipeReader != nil {
 		pipeReader.Close()
 	}
@@ -390,7 +366,6 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	// 3. 执行后钩子
 	if hooks != nil {
 		if hookErr := hooks.PostExecute(ctx, logID, result); hookErr != nil {
-			// 记录钩子错误但不影响执行结果
 			result.Output += "\n[钩子错误] " + hookErr.Error()
 		}
 	}
@@ -450,7 +425,6 @@ func ParseEnvVars(envStr string) []string {
 		if pair == "" {
 			continue
 		}
-		// 解码特殊字符
 		pair = strings.ReplaceAll(pair, "{{COMMA}}", ",")
 		pair = strings.ReplaceAll(pair, "{{EQUAL}}", "=")
 		pair = strings.ReplaceAll(pair, "{{NL}}", "\n")
@@ -460,8 +434,7 @@ func ParseEnvVars(envStr string) []string {
 	return result
 }
 
-// FormatEnvVars 将环境变量列表格式化为逗号分隔的字符串 "KEY1=VALUE1,KEY2=VALUE2"
-// 会对 , 和 = 以及换行符进行转义
+// FormatEnvVars 将环境变量列表格式化为逗号分隔的字符串
 func FormatEnvVars(envs []string) string {
 	if len(envs) == 0 {
 		return ""
@@ -469,7 +442,6 @@ func FormatEnvVars(envs []string) string {
 
 	pairs := make([]string, 0, len(envs))
 	for _, pair := range envs {
-		// 寻找第一个等号
 		idx := strings.Index(pair, "=")
 		if idx == -1 {
 			continue
@@ -477,7 +449,6 @@ func FormatEnvVars(envs []string) string {
 		name := pair[:idx]
 		value := pair[idx+1:]
 
-		// 转义特殊字符
 		encodedValue := strings.ReplaceAll(value, ",", "{{COMMA}}")
 		encodedValue = strings.ReplaceAll(encodedValue, "=", "{{EQUAL}}")
 		encodedValue = strings.ReplaceAll(encodedValue, "\n", "{{NL}}")

@@ -75,8 +75,6 @@ type ExecutionRequest struct {
 	Envs          []string            // 环境变量
 	Secrets       []string            // 需要脱敏的密码
 	Timeout       int                 // 超时时间（分钟）
-	Languages     []map[string]string // 语言环境配置
-	UseMise       bool                // 是否使用 mise
 	Metadata      ExecutionMetadata   // 额外元数据
 }
 
@@ -233,8 +231,6 @@ func NewScheduler(config SchedulerConfig, handler SchedulerEventHandler) *Schedu
 				WorkDir:     req.WorkDir,
 				Envs:        req.Envs,
 				Timeout:     req.Timeout,
-				Languages:   req.Languages,
-				UseMise:     req.UseMise,
 			}, stdout, stderr, hooks)
 		},
 		taskQueue:    make(chan *ExecutionRequest, config.QueueSize),
@@ -445,13 +441,6 @@ func (s *Scheduler) executeTask(req *ExecutionRequest) (*ExecutionResult, error)
 		return result, nil
 	}
 
-	// 如果指定使用 mise，则预先构建好带 mise 的命令，这样 OnTaskExecuting 记录的就是完整命令
-	if req.UseMise {
-		// 先注入 NODE_PATH (由于调度器会把 UseMise 置为 false，所以必须在这里提前处理)
-		utils.InjectNodePath(&req.Envs, req.Languages)
-		req.Command = utils.BuildMiseCommand(req.Command, req.Languages)
-		req.UseMise = false
-	}
 	// 确保系统级敏感信息（数据库地址、账号、密码等）始终在脱敏列表中
 	allSecrets := append([]string{}, req.Secrets...)
 	allSecrets = append(allSecrets, utils.GetSystemSecrets()...)

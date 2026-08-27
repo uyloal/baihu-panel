@@ -1,7 +1,0 @@
-{
-  "name": "baihu",
-  "version": "1.0.0",
-  "description": "Baihu Panel internal helper for Node.js",
-  "main": "index.js",
-  "license": "MIT"
-}

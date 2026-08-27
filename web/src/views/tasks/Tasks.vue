@@ -8,7 +8,7 @@ import Pagination from '@/components/Pagination.vue'
 import TaskDialog from './TaskDialog.vue'
 import RepoDialog from './RepoDialog.vue'
 import LogViewer from '@/views/history/LogViewer.vue'
-import { Plus, Play, Pencil, Trash2, Search, ScrollText, GitBranch, Terminal, Server, Monitor, X, Loader2, RefreshCw, Wifi, WifiOff, Zap, ZapOff, Copy, Tag, ChevronDown, Pin, PinOff, MoreHorizontal, CalendarClock, Wrench, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-vue-next'
+import { Plus, Play, Pencil, Trash2, Search, ScrollText, GitBranch, Terminal, X, Loader2, RefreshCw, Zap, ZapOff, Copy, Tag, ChevronDown, Pin, PinOff, MoreHorizontal, CalendarClock, Wrench, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-vue-next'
 import TagInput from '@/components/TagInput.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -24,24 +24,19 @@ import {
 import StatusDot from '@/components/StatusDot.vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { api, type Agent, type Task, type TaskLog } from '@/api'
+import { api, type Task, type TaskLog } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useEventBus } from '@/composables/useEventBus'
-import { useRouter, useRoute } from 'vue-router'
-import { TASK_TYPE, AGENT_STATUS, TRIGGER_TYPE, TASK_STATUS } from '@/constants'
+import { TASK_TYPE, TRIGGER_TYPE, TASK_STATUS } from '@/constants'
 import TextOverflow from '@/components/TextOverflow.vue'
 import { getCronDescription } from '@/utils/cron'
 import { generateBaihuCommand } from '@/utils/repo-parser'
 import { copyToClipboard } from '@/utils/clipboard'
 
-
-const router = useRouter()
-const route = useRoute()
 const { pageSize } = useSiteSettings()
 
 const tasks = ref<Task[]>([])
-const agents = ref<Agent[]>([])
 const showTaskDialog = ref(false)
 const showRepoDialog = ref(false)
 const editingTask = ref<Partial<Task>>({})
@@ -76,39 +71,10 @@ const deleteFiles = ref(false)
 const filterName = ref('')
 const filterTags = ref('')
 const filterType = ref<string>(TASK_TYPE.NORMAL)
-const filterAgentId = ref<string | null>(null)
 const currentPage = ref(1)
 const total = ref(0)
 const loading = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
-
-// 创建 agent 映射表
-const agentMap = computed(() => {
-  const map: Record<string, Agent> = {}
-  agents.value.forEach((a: Agent) => { map[a.id] = a })
-  return map
-})
-
-// 当前筛选 of Agent 名称
-const filterAgentName = computed(() => {
-  if (!filterAgentId.value) return ''
-  const agent = agentMap.value[filterAgentId.value]
-  return agent ? agent.name : `Agent #${filterAgentId.value}`
-})
-
-// 获取任务执行位置名称
-function getExecutorName(task: Task): string {
-  if (!task.agent_id) return '本地'
-  const agent = agentMap.value[task.agent_id]
-  return agent ? agent.name : `Agent #${task.agent_id}`
-}
-
-// 获取任务执行位置状态
-function getExecutorStatus(task: Task): 'local' | 'online' | 'offline' {
-  if (!task.agent_id) return 'local'
-  const agent = agentMap.value[task.agent_id]
-  return agent?.status === AGENT_STATUS.ONLINE ? 'online' : 'offline'
-}
 
 async function loadTasks() {
   loading.value = true
@@ -119,7 +85,6 @@ async function loadTasks() {
       name: filterName.value || undefined,
       tags: filterTags.value || undefined,
       type: filterType.value === 'all' ? undefined : filterType.value,
-      agent_id: filterAgentId.value || undefined,
       sort_by: sortBy.value || undefined,
       order: order.value || undefined
     })
@@ -128,12 +93,6 @@ async function loadTasks() {
   } catch { toast.error('加载任务失败') } finally {
     loading.value = false
   }
-}
-
-async function loadAgents() {
-  try {
-    agents.value = await api.agents.list()
-  } catch { /* ignore */ }
 }
 
 function handleSearch() {
@@ -151,13 +110,6 @@ function handleTypeChange() {
 
 function handlePageChange(page: number) {
   currentPage.value = page
-  loadTasks()
-}
-
-function clearAgentFilter() {
-  filterAgentId.value = null
-  router.replace({ query: {} })
-  currentPage.value = 1
   loadTasks()
 }
 
@@ -196,51 +148,6 @@ function duplicateTask(task: Task) {
   } else {
     showTaskDialog.value = true
   }
-}
-
-function getLangBadgeClass(name: string) {
-  const n = name.toLowerCase()
-  const colors: Record<string, string> = {
-    python: 'bg-amber-500/10 text-amber-500 border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
-    py: 'bg-amber-500/10 text-amber-500 border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
-    
-    node: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
-    nodejs: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
-    
-    go: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20',
-    golang: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20',
-    
-    rust: 'bg-orange-500/10 text-orange-500 border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20',
-    cargo: 'bg-orange-500/10 text-orange-500 border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20',
-    
-    php: 'bg-violet-500/10 text-violet-500 border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-400 dark:border-violet-500/20',
-    
-    ruby: 'bg-red-500/10 text-red-500 border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20',
-    
-    bun: 'bg-pink-500/10 text-pink-500 border-pink-500/20 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20',
-    
-    deno: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20',
-    
-    java: 'bg-amber-600/10 text-amber-600 border-amber-600/20 dark:bg-amber-600/10 dark:text-amber-500 dark:border-amber-600/20',
-    
-    dotnet: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20',
-    
-    lua: 'bg-blue-500/10 text-blue-500 border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20',
-    
-    dart: 'bg-sky-500/10 text-sky-500 border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20',
-    flutter: 'bg-sky-500/10 text-sky-500 border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20'
-  }
-  return colors[n] || 'bg-slate-500/10 text-slate-500 border-slate-500/20 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20'
-}
-
-function getShortLangName(name: string): string {
-  const n = name.toLowerCase()
-  const mapping: Record<string, string> = {
-    python: 'py',
-    nodejs: 'node',
-    golang: 'go'
-  }
-  return mapping[n] || n
 }
 
 const showExportDialog = ref(false)
@@ -286,8 +193,7 @@ async function batchDeleteTasks() {
     const res = await api.tasks.batchDeleteByQuery({
       name: filterName.value || undefined,
       tags: filterTags.value || undefined,
-      type: filterType.value === 'all' ? undefined : filterType.value,
-      agent_id: filterAgentId.value || undefined
+      type: filterType.value === 'all' ? undefined : filterType.value
     })
     toast.success(`成功删除 ${res.count} 个任务`)
     loadTasks()
@@ -505,12 +411,15 @@ async function viewLogs(taskId: string, logId?: string) {
       if (parsed && parsed.type === 'finish') {
         cleanupDurationTimer()
         cleanupLogSocket()
+        const resolvedStatus = (parsed.status && parsed.status !== TASK_STATUS.RUNNING && parsed.status !== TASK_STATUS.PENDING)
+          ? parsed.status
+          : 'success'
         if (selectedLog.value) {
           selectedLog.value = {
             ...selectedLog.value,
-            status: parsed.status || 'success',
+            status: resolvedStatus,
             duration: parsed.duration !== undefined ? parsed.duration : selectedLog.value.duration,
-            end_time: parsed.end_time || selectedLog.value.end_time || '-'
+            end_time: (parsed.end_time && parsed.end_time !== '-') ? parsed.end_time : new Date().toLocaleString()
           } as TaskLog
         }
         loadTasks()
@@ -593,11 +502,9 @@ async function loadViewsFromSettings() {
     const val = res['task_views']
     if (val) {
       taskViews.value = JSON.parse(val)
-      if (!route.query.agent_id) {
-        const defaultView = taskViews.value.find((v: any) => v.isDefault)
-        if (defaultView) {
-          applyViewWithoutSearch(defaultView)
-        }
+      const defaultView = taskViews.value.find((v: any) => v.isDefault)
+      if (defaultView) {
+        applyViewWithoutSearch(defaultView)
       }
     }
   } catch (e) {
@@ -616,7 +523,6 @@ async function saveView() {
     query: {
       name: filterName.value,
       tags: filterTags.value,
-      agent_id: filterAgentId.value,
       type: filterType.value,
       sort_by: sortBy.value,
       order: order.value
@@ -643,7 +549,6 @@ async function saveView() {
 function applyViewWithoutSearch(view: any) {
   filterName.value = view.query.name || ''
   filterTags.value = view.query.tags || ''
-  filterAgentId.value = view.query.agent_id || null
   filterType.value = view.query.type || TASK_TYPE.NORMAL
   sortBy.value = view.query.sort_by || 'created_at'
   order.value = view.query.order || 'desc'
@@ -693,51 +598,39 @@ function getTaskTypeTitle(type: string) {
 }
 
 onMounted(async () => {
-  // 先加载 agents，再处理 URL 参数
-  await loadAgents()
-
-  // 从 URL 参数读取 agent_id
-  const agentIdParam = route.query.agent_id
-  if (agentIdParam) {
-    filterAgentId.value = String(agentIdParam)
-  }
-
-  // 先加载视图配置，若有默认视图且无 URL 显式参数则在此阶段应用
   await loadViewsFromSettings()
-
   loadTasks()
 })
 
 // 订阅任务状态实时更新
-useEventBus(['task_running', 'task_queued', 'task_success', 'task_failed', 'task_timeout', 'task_cancelled'], (payload) => {
-  const task = tasks.value.find(t => t.id === payload.task_id)
-  if (task) {
-    task.running_status = payload.status
+useEventBus(['task_running', 'task_queued', 'task_success', 'task_failed', 'task_timeout', 'task_cancelled'], (payload: any) => {
+  if (!payload) return
+  const taskId = typeof payload === 'string' ? payload : payload.task_id
+  const logId = typeof payload === 'object' ? payload.log_id : undefined
+  const status = typeof payload === 'object' ? payload.status : undefined
+
+  const task = tasks.value.find(t => t.id === taskId)
+  if (task && status) {
+    task.running_status = status
   }
   
   // 同步更新打开的日志弹窗状态（按 log_id 或 task_id 匹配）
-  if (selectedLog.value && (selectedLog.value.id === payload.log_id || selectedLog.value.task_id === payload.task_id)) {
-    // 替换为全新的响应式对象以触发所有子组件更新
-    selectedLog.value = {
-      ...selectedLog.value,
-      status: payload.status,
-      duration: payload.duration !== undefined ? payload.duration : selectedLog.value.duration,
-      end_time: payload.end_time !== undefined ? payload.end_time : selectedLog.value.end_time
-    }
-    
-    if (payload.status !== TASK_STATUS.RUNNING) {
-      cleanupDurationTimer()
-      cleanupLogSocket()
-      loadTasks()
+  if (selectedLog.value && ((logId && selectedLog.value.id === logId) || (taskId && selectedLog.value.task_id === taskId))) {
+    if (status) {
+      selectedLog.value = {
+        ...selectedLog.value,
+        status: status,
+        duration: payload.duration !== undefined ? payload.duration : selectedLog.value.duration,
+        end_time: payload.end_time !== undefined ? payload.end_time : selectedLog.value.end_time
+      }
+      
+      if (status !== TASK_STATUS.RUNNING && status !== TASK_STATUS.PENDING) {
+        cleanupDurationTimer()
+        cleanupLogSocket()
+        loadTasks()
+      }
     }
   }
-})
-
-// 监听路由参数变化
-watch(() => route.query.agent_id, (newVal: any) => {
-  filterAgentId.value = newVal ? String(newVal) : null
-  currentPage.value = 1
-  loadTasks()
 })
 </script>
 
@@ -850,13 +743,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
              </Select>
           </div>
 
-          <div v-if="filterAgentId"
-            class="hidden xl:flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm shrink-0">
-            <Server class="h-3.5 w-3.5" />
-            <span>{{ filterAgentName }}</span>
-            <X class="h-3.5 w-3.5 cursor-pointer hover:text-destructive" @click="clearAgentFilter" />
-          </div>
-
           <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadTasks" :disabled="loading" title="刷新">
             <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
           </Button>
@@ -887,13 +773,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
             </Tabs>
           </div>
         </div>
-        <!-- 移动端/平板 agent 过滤标签 -->
-        <div v-if="filterAgentId"
-          class="flex xl:hidden items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm w-fit mt-1">
-          <Server class="h-3.5 w-3.5" />
-          <span>{{ filterAgentName }}</span>
-          <X class="h-3.5 w-3.5 cursor-pointer hover:text-destructive" @click="clearAgentFilter" />
-        </div>
       </div>
     </div>
 
@@ -910,7 +789,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
             <ArrowUp v-else-if="order === 'asc'" class="h-3 w-3 text-primary shrink-0" />
             <ArrowDown v-else class="h-3 w-3 text-primary shrink-0" />
           </span>
-          <span class="w-32 shrink-0">执行位置</span>
           <span class="flex-1 min-w-0 flex items-center gap-1.5 line-clamp-1">
             <GitBranch v-if="filterType === TASK_TYPE.REPO" class="h-3.5 w-3.5 opacity-50" />
             <Terminal v-else class="h-3.5 w-3.5 opacity-50" />
@@ -949,12 +827,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
             <div class="w-56 shrink-0 flex flex-col justify-center gap-0.5 overflow-hidden">
               <div class="flex items-center gap-1.5 overflow-hidden">
                 <span class="font-medium truncate cursor-help flex-1 min-w-0" :title="task.name">{{ task.name }}</span>
-                <span v-for="lang in task.languages" :key="lang.name"
-                  class="shrink-0 inline-flex items-center rounded px-1 py-px text-[9px] font-mono border transition-all hover:opacity-90 leading-none ml-auto"
-                  :class="getLangBadgeClass(lang.name)"
-                  :title="lang.name + (lang.version ? '@' + lang.version : '')">
-                  {{ getShortLangName(lang.name) }}{{ lang.version ? ':' + lang.version : '' }}
-                </span>
                 <Pin v-if="task.pin_type === 'top'" class="h-3 w-3 text-primary fill-primary shrink-0 rotate-45" />
               </div>
               <div v-if="task.tags" class="flex items-center gap-1 overflow-hidden">
@@ -962,14 +834,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
                   class="truncate text-[10px] leading-none px-1 py-0.5 bg-secondary text-secondary-foreground rounded border">{{ tag }}</span>
               </div>
             </div>
-            <span class="w-32 shrink-0 flex items-center gap-1 text-xs" :title="getExecutorName(task)">
-              <Monitor v-if="!task.agent_id" class="h-3 w-3 text-muted-foreground" />
-              <template v-else>
-                <Wifi v-if="getExecutorStatus(task) === 'online'" class="h-3 w-3 text-green-500" />
-                <WifiOff v-else class="h-3 w-3 text-muted-foreground" />
-              </template>
-              <span class="truncate">{{ getExecutorName(task) }}</span>
-            </span>
             <code class="flex-1 min-w-0 text-muted-foreground truncate text-xs bg-muted/40 px-2 py-1 rounded">
               <TextOverflow :text="task.command" :title="task.type === TASK_TYPE.REPO ? '仓库地址' : '执行命令'" class="truncate" />
             </code>
@@ -1070,12 +934,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
               <div class="flex flex-col min-w-0 flex-1">
                 <div class="flex items-center gap-1.5 overflow-hidden">
                   <span class="font-medium truncate flex-1 min-w-0">{{ task.name }}</span>
-                  <span v-for="lang in task.languages" :key="lang.name"
-                    class="shrink-0 inline-flex items-center rounded px-1 py-px text-[9px] font-mono border transition-all hover:opacity-90 leading-none ml-auto"
-                    :class="getLangBadgeClass(lang.name)"
-                    :title="lang.name + (lang.version ? '@' + lang.version : '')">
-                    {{ getShortLangName(lang.name) }}{{ lang.version ? ':' + lang.version : '' }}
-                  </span>
                   <Pin v-if="task.pin_type === 'top'" class="h-3 w-3 text-primary fill-primary shrink-0 rotate-45" />
                 </div>
                 <span v-if="task.schedule" class="text-[10px] text-muted-foreground font-mono truncate mt-0.5">{{ task.schedule }}</span>
@@ -1161,16 +1019,6 @@ watch(() => route.query.agent_id, (newVal: any) => {
             </span>
           </div>
           <div class="space-y-1.5 text-xs text-muted-foreground mb-3 px-1">
-            <div v-if="task.languages && task.languages.length > 0" class="flex items-center gap-3">
-              <span class="w-10 shrink-0 font-medium opacity-70">环境:</span>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span v-for="lang in task.languages" :key="lang.name"
-                  class="inline-flex items-center rounded px-1 py-px text-[9px] font-mono border leading-none"
-                  :class="getLangBadgeClass(lang.name)">
-                  {{ getShortLangName(lang.name) }}{{ lang.version ? ':' + lang.version : '' }}
-                </span>
-              </div>
-            </div>
             <div class="flex items-center gap-3">
               <span class="w-10 shrink-0 font-medium opacity-70">{{ task.type === TASK_TYPE.REPO ? '周期:' : '定时:' }}</span>
               <span v-if="task.trigger_type === TRIGGER_TYPE.BAIHU_STARTUP" class="text-[10px] leading-tight bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded font-medium">服务启动时</span>

@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import XTerminal from '@/components/XTerminal.vue'
 import { Save, Play, FilePen, TextCursorInput, Eye, X, Download, Trash2, AlertCircle } from 'lucide-vue-next'
-import { api, type FileNode, type MiseLanguage } from '@/api'
+import { api, type FileNode } from '@/api'
 import { toast } from 'vue-sonner'
 import { PATHS } from '@/constants'
 
 import FileSidebar from './components/FileSidebar.vue'
-import RunConfigDialog from './components/RunConfigDialog.vue'
 import FileActionDialogs from './components/FileActionDialogs.vue'
 import UnsavedConfirmDialog from './components/UnsavedConfirmDialog.vue'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
@@ -47,23 +46,6 @@ const confirmLeave = ref({
 const dialogsRef = ref<InstanceType<typeof FileActionDialogs> | null>(null)
 const terminalRef = ref<InstanceType<typeof XTerminal> | null>(null)
 
-// State for RunConfig
-const showRunDialog = ref(false)
-const selectedEnvs = ref<{ plugin: string; version: string }[]>([])
-const installedLangs = ref<MiseLanguage[]>([])
-
-const langGroups = computed(() => {
-  const groups: Record<string, string[]> = {}
-  installedLangs.value.forEach(lang => {
-    const plugin = lang?.plugin
-    if (plugin) {
-      if (!groups[plugin]) groups[plugin] = []
-      groups[plugin]!.push(lang.version)
-    }
-  })
-  return groups
-})
-
 // State for Terminal
 const showTerminalDialog = ref(false)
 const runCommand = ref('')
@@ -73,17 +55,6 @@ const scriptsDir = ref('')
 const showScriptWarningDialog = ref(false)
 const scriptWarningMessage = ref('')
 const onWarningConfirm = ref<(() => void) | null>(null)
-
-
-async function fetchInstalledLangs() {
-  try {
-    installedLangs.value = await api.mise.list()
-  } catch {
-    installedLangs.value = []
-  }
-}
-
-import { getLangIcon } from '@/utils/icons'
 
 async function fetchPaths() {
   try {
@@ -116,8 +87,23 @@ const editorOptions = computed(() => ({
   renderLineHighlight: 'all' as const,
 }))
 
-function handleEditorMount(editor: any) {
+function handleEditorMount(editor: any, monaco?: any) {
   editorRef.value = editor
+  const ts = monaco?.languages?.typescript
+  if (ts) {
+    const compilerOptions = {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      allowNonTsExtensions: true,
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+      allowJs: true,
+      checkJs: false
+    }
+    ts.typescriptDefaults.setCompilerOptions(compilerOptions)
+    ts.javascriptDefaults.setCompilerOptions(compilerOptions)
+  }
 }
 
 function handleResize() {
@@ -402,24 +388,10 @@ async function handleFilesUpload(files: FileList, paths: string[], target: strin
 
 async function runScript() {
   if (!selectedFile.value) return
-  const ext = selectedFile.value.split('.').pop()?.toLowerCase() || ''
-  const extToLang: Record<string, string> = { 'py': 'python', 'js': 'node', 'ts': 'node', 'go': 'go' }
-  const inferred = extToLang[ext]
-  selectedEnvs.value = []
-  if (inferred) {
-    const firstV = installedLangs.value.find(l => l.plugin === inferred)?.version
-    if (firstV) selectedEnvs.value.push({ plugin: inferred, version: firstV })
-  }
-  showRunDialog.value = true
-}
-
-async function startExecution() {
-  if (!selectedFile.value) return
   
   const base = scriptsDir.value || PATHS.SCRIPTS_DIR
-  runCommand.value = buildExecutionCommand(selectedFile.value, selectedEnvs.value, base)
+  runCommand.value = buildExecutionCommand(selectedFile.value, base)
   
-  showRunDialog.value = false
   showTerminalDialog.value = true
   await nextTick()
   setTimeout(() => {
@@ -541,7 +513,6 @@ onMounted(async () => {
   await initSortMethod()
   initFromUrl()
   fetchPaths()
-  fetchInstalledLangs()
   window.addEventListener('resize', handleResize)
   window.addEventListener('keydown', handleGlobalKeydown)
 })
@@ -650,14 +621,6 @@ onUnmounted(() => {
       @create="createItem"
       @delete="deleteItem"
       @rename="renameItem"
-    />
-
-    <RunConfigDialog
-      v-model:open="showRunDialog"
-      v-model:selected-envs="selectedEnvs"
-      :lang-groups="langGroups"
-      :get-lang-icon="getLangIcon"
-      @confirm="startExecution"
     />
 
     <Dialog v-model:open="showTerminalDialog">

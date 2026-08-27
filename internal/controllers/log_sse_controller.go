@@ -3,7 +3,9 @@ package controllers
 import (
 	"fmt"
 	"io"
+	"time"
 
+	"github.com/uyloal/baihu-panel/internal/constant"
 	"github.com/uyloal/baihu-panel/internal/database"
 	"github.com/uyloal/baihu-panel/internal/models"
 	"github.com/uyloal/baihu-panel/internal/services/tasks"
@@ -33,12 +35,13 @@ func (lc *LogSSEController) StreamLog(c *gin.Context) {
 	c.Header("Transfer-Encoding", "chunked")
 	c.Header("X-Accel-Buffering", "no")
 
-	// 1. 检查数据库中是否已结束
+	// 1. 检查数据库中日志记录状态
 	var taskLog models.TaskLog
 	res := database.DB.Where("id = ?", logID).Limit(1).Find(&taskLog)
 	if res.Error == nil && res.RowsAffected > 0 {
-		if taskLog.Status != "running" {
-			// 已结束，直接返回全量日志以及 finish 结构帧
+		status := taskLog.Status
+		// 只有明确已完成的状态才直接返回 finish 帧
+		if status != constant.TaskStatusRunning && status != constant.TaskStatusPending {
 			content, err := utils.DecompressFromBase64(string(taskLog.Output))
 			if err != nil {
 				content = "解压日志失败: " + err.Error()
@@ -60,12 +63,58 @@ func (lc *LogSSEController) StreamLog(c *gin.Context) {
 		}
 	}
 
-	// 2. 未结束或未找到记录，尝试从 TinyLogManager 获取
-	tl := tasks.GetActiveLog(logID)
+	// 2. 任务处于 pending/running，轮询等待 TinyLog 就绪（最多等 30s）
+	var tl *tasks.TinyLog
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		// 优先检查 context 是否已取消（客户端断开连接）
+		select {
+		case <-c.Request.Context().Done():
+			return
+		default:
+		}
+
+		tl = tasks.GetActiveLog(logID)
+		if tl != nil {
+			break
+		}
+
+		// TinyLog 还未就绪，检查数据库状态：
+		// 如果任务已完成（非 pending/running），直接返回 finish 帧
+		var checkLog models.TaskLog
+		checkRes := database.DB.Where("id = ?", logID).Limit(1).Find(&checkLog)
+		if checkRes.Error == nil && checkRes.RowsAffected > 0 {
+			s := checkLog.Status
+			if s != constant.TaskStatusRunning && s != constant.TaskStatusPending {
+				content, err := utils.DecompressFromBase64(string(checkLog.Output))
+				if err != nil {
+					content = "解压日志失败: " + err.Error()
+				}
+				endTimeStr := ""
+				if checkLog.EndTime != nil {
+					endTimeStr = checkLog.EndTime.Time().Format("2006-01-02 15:04:05")
+				}
+				c.SSEvent("message", gin.H{
+					"type":      "finish",
+					"text":      content,
+					"status":    checkLog.Status,
+					"duration":  checkLog.Duration,
+					"end_time":  endTimeStr,
+					"exit_code": checkLog.ExitCode,
+				})
+				c.Writer.Flush()
+				return
+			}
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	// 超时仍未找到 TinyLog
 	if tl == nil {
 		c.SSEvent("message", gin.H{
-			"type": "finish",
-			"text": "未找到正在运行的任务日志",
+			"type":   "finish",
+			"text":   "未找到正在运行的任务日志（等待超时）",
 			"status": "failed",
 		})
 		c.Writer.Flush()
@@ -100,19 +149,42 @@ func (lc *LogSSEController) StreamLog(c *gin.Context) {
 			if !ok {
 				// 任务结束，读取库内落库后的最终真实数据，下发统一的 finish 帧
 				var finalLog models.TaskLog
-				status := "success"
+				status := constant.TaskStatusSuccess
 				var duration int64
 				endTimeStr := "-"
 				var exitCode int
 
-				dbRes := database.DB.Where("id = ?", logID).Limit(1).Find(&finalLog)
-				if dbRes.Error == nil && dbRes.RowsAffected > 0 {
-					if finalLog.Status != "" {
-						status = finalLog.Status
+				// 防御性轮询等待数据库中的最终状态落库（最多 10 次，共 500ms）
+				for i := 0; i < 10; i++ {
+					dbRes := database.DB.Where("id = ?", logID).Limit(1).Find(&finalLog)
+					if dbRes.Error == nil && dbRes.RowsAffected > 0 {
+						if finalLog.Status != "" && finalLog.Status != constant.TaskStatusRunning && finalLog.Status != constant.TaskStatusPending {
+							status = finalLog.Status
+							duration = finalLog.Duration
+							if finalLog.EndTime != nil {
+								endTimeStr = finalLog.EndTime.Time().Format("2006-01-02 15:04:05")
+							}
+							exitCode = finalLog.ExitCode
+							break
+						}
 					}
-					duration = finalLog.Duration
+					time.Sleep(50 * time.Millisecond)
+				}
+
+				// 如果最终查询依然未获取到终态（如仍为 running/pending），强制根据 ExitCode/Error 兜底修正，严禁下发 status: running 的 finish 帧
+				if status == constant.TaskStatusRunning || status == constant.TaskStatusPending {
+					if finalLog.ExitCode != 0 || string(finalLog.Error) != "" {
+						status = constant.TaskStatusFailed
+					} else {
+						status = constant.TaskStatusSuccess
+					}
+					if finalLog.Duration > 0 {
+						duration = finalLog.Duration
+					}
 					if finalLog.EndTime != nil {
 						endTimeStr = finalLog.EndTime.Time().Format("2006-01-02 15:04:05")
+					} else {
+						endTimeStr = time.Now().Format("2006-01-02 15:04:05")
 					}
 					exitCode = finalLog.ExitCode
 				}

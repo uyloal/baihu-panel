@@ -25,8 +25,6 @@ type TaskParam struct {
 	WorkDir       string
 	CleanConfig   string
 	Envs          string
-	Languages     models.TaskLanguages
-	AgentID       *string
 	TriggerType   string
 	RetryCount    int
 	RetryInterval int
@@ -50,7 +48,6 @@ func (ts *TaskService) GetTaskBySourceID(sourceID string) *models.Task {
 		return nil
 	}
 	ts.loadTagsAndEnvs([]models.Task{task})
-	
 	return &task
 }
 
@@ -81,8 +78,6 @@ func (ts *TaskService) CreateTask(p *TaskParam) *models.Task {
 		WorkDir:       p.WorkDir,
 		CleanConfig:   p.CleanConfig,
 		Envs:          models.BigText(p.Envs),
-		Languages:     p.Languages,
-		AgentID:       p.AgentID,
 		Enabled:       utils.BoolPtr(true),
 		RetryCount:    p.RetryCount,
 		RetryInterval: p.RetryInterval,
@@ -111,7 +106,7 @@ func (ts *TaskService) GetTasks() []models.Task {
 }
 
 // GetTasksWithPagination 分页获取任务列表
-func (ts *TaskService) GetTasksWithPagination(page, pageSize int, name string, agentID *string, tags string, taskType string, sortBy string, order string) ([]models.Task, int64) {
+func (ts *TaskService) GetTasksWithPagination(page, pageSize int, name string, tags string, taskType string, sortBy string, order string) ([]models.Task, int64) {
 	var tasks []models.Task
 	var total int64
 
@@ -120,7 +115,6 @@ func (ts *TaskService) GetTasksWithPagination(page, pageSize int, name string, a
 		query = query.Where("name LIKE ? OR remark LIKE ?", "%"+name+"%", "%"+name+"%")
 	}
 
-	// 标签筛选 (交集或并集均可，这里保留原本的逻辑为并集，但是利用数据关联表)
 	if tags != "" {
 		tagList := strings.Split(tags, ",")
 		var validTags []string
@@ -150,9 +144,6 @@ func (ts *TaskService) GetTasksWithPagination(page, pageSize int, name string, a
 	if taskType != "" && taskType != "all" {
 		query = query.Where("type = ?", taskType)
 	}
-	if agentID != nil {
-		query = query.Where("agent_id = ?", *agentID)
-	}
 
 	sortColumn := "created_at"
 	if sortBy != "" {
@@ -181,7 +172,6 @@ func (ts *TaskService) GetTaskByID(id string) *models.Task {
 	}
 	tasks := []models.Task{task}
 	ts.loadTagsAndEnvs(tasks)
-	
 	return &tasks[0]
 }
 
@@ -202,8 +192,6 @@ func (ts *TaskService) UpdateTask(id string, p *TaskParam) *models.Task {
 	task.WorkDir = p.WorkDir
 	task.CleanConfig = p.CleanConfig
 	task.Enabled = &p.Enabled
-	task.AgentID = p.AgentID
-	task.Languages = p.Languages
 	task.Config = models.BigText(p.Config)
 	task.RetryCount = p.RetryCount
 	task.RetryInterval = p.RetryInterval
@@ -220,7 +208,7 @@ func (ts *TaskService) UpdateTask(id string, p *TaskParam) *models.Task {
 
 	database.DB.Model(&task).Select(
 		"Name", "Remark", "Command", "Tags", "Schedule", "Timeout", "WorkDir",
-		"CleanConfig", "Enabled", "AgentID", "Languages",
+		"CleanConfig", "Enabled",
 		"RetryCount", "RetryInterval", "RandomRange", "Type",
 		"TriggerType", "Config", "SourceID", "PinType",
 		"PreCommand", "PostCommand",
@@ -235,7 +223,6 @@ func (ts *TaskService) UpdateTask(id string, p *TaskParam) *models.Task {
 }
 
 func (ts *TaskService) DeleteTask(id string) bool {
-	// 同时删除关联的通知推送设置
 	database.DB.Where("type = ? AND data_id = ?", constant.BindingTypeTask, id).Delete(&models.NotifyBinding{})
 	relation.DataRelation.CleanRelations(id, constant.RelationTypeTaskTag)
 	relation.DataRelation.CleanRelations(id, constant.RelationTypeTaskEnv)
@@ -245,7 +232,6 @@ func (ts *TaskService) DeleteTask(id string) bool {
 }
 
 func (ts *TaskService) BatchDeleteTasks(ids []string) int64 {
-	// 同时删除关联的通知推送设置
 	database.DB.Where("type = ? AND data_id IN ?", constant.BindingTypeTask, ids).Delete(&models.NotifyBinding{})
 	database.DB.Where("type = ? AND data_id IN ?", constant.RelationTypeTaskTag, ids).Delete(&models.DataRelation{})
 	database.DB.Where("type = ? AND data_id IN ?", constant.RelationTypeTaskEnv, ids).Delete(&models.DataRelation{})
@@ -267,17 +253,17 @@ func (ts *TaskService) loadTagsAndEnvs(tasks []models.Task) {
 	for i, t := range tasks {
 		taskIDs[i] = t.ID
 	}
-	
+
 	tagsMap := relation.DataRelation.LoadTags(taskIDs, constant.RelationTypeTaskTag)
 	envsMap := relation.DataRelation.LoadRelations(taskIDs, constant.RelationTypeTaskEnv)
-	
+
 	for i, t := range tasks {
 		if tags, ok := tagsMap[t.ID]; ok {
 			tasks[i].Tags = strings.Join(tags, ",")
 		} else {
 			tasks[i].Tags = ""
 		}
-		
+
 		if envs, ok := envsMap[t.ID]; ok {
 			tasks[i].Envs = models.BigText(strings.Join(envs, ","))
 		} else {

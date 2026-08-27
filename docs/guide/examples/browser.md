@@ -99,7 +99,7 @@ services:
       - "8052:8052"
     volumes:
       - ./data:/app/data
-      - ./envs:/app/envs
+      - ./configs:/app/configs
     environment:
       - TZ=Asia/Shanghai
       - BH_SERVER_PORT=8052

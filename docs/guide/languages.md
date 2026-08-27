@@ -1,74 +1,35 @@
-# 语言依赖
+# 依赖管理
 
-baihu-panel深度集成了 **Mise** 运行时管理器，这使得它具备多版本语言环境的高灵活性和隔离性。
+白虎面板采用极简架构，深度集成 **Node.js 24 LTS** 与 **pnpm 11.24** 依赖管理生态。
 
 ## 脚本运行环境
 
-baihu-panel原生支持以下脚本的定时执行：
-- **Python3**, **Node.js**, **Bash** (标准版镜像内置环境)
-- 通过 **Mise** 扩展：支持几乎所有主流编程语言的动态安装与切换。
-
-
-> [!TIP]
-> **Minimal 镜像注意**：如果您使用的是 `minimal` 标签的镜像，系统初始不包含 Python 和 Node.js。您需要进入「编程语言」页面手动点击安装您所需的运行时。
-
-## 依赖管理支持
-
-系统内置了高度集成的跨语言依赖管理器，支持自动化安装和管理以下语言的依赖项，并确保在容器内全局可用：
-
-| 语言 | 包管理器 | 功能说明 |
-| :--- | :--- | :--- |
-| **Python** | pip | 自动使用内置虚拟环境，支持清华源 |
-| **Node.js** | npm | 全局安装模式，自动配置 npmmirror 镜像 |
-| **Go** | go install | 通过 `go install` 安装二进制工具 |
-| **Rust** | cargo | 通过 `cargo install` 安装 Rust 依赖 |
-| **Ruby** | gem | 支持 `gem install` 本地安装 |
-| **Bun** | bun | 支持 `bun add -g` 全局模式 |
-| **PHP** | composer | 支持 `composer global require` |
-| **Deno** | deno | 支持 `deno install -g` |
-| **.NET** | dotnet | 支持 `dotnet tool install -g` |
-| **Elixir/Erlang** | mix | 支持 `mix archive.install` |
-| **Lua** | luarocks | 通过 `luarocks` 管理 Lua 包 |
-| **Nim** | nimble | 支持 `nimble install` |
-| **Dart/Flutter** | pub | 支持 `pub global activate` |
-| **Perl** | cpanm | 简单的 `cpanm` 安装支持 |
-| **Crystal** | shards | `shards` 项目级别或工具安装 |
-
-## 使用方法
-
-### 1. 安装环境
-进入「编程语言」页面，使用 `mise` 一键安装所需的语言及版本。
-
-### 2. 依赖管理
-在已安装列表点击「依赖管理」，输入名称（可选版本）即可自动在对应环境内完成安装。
-
-### 3. 多版本切换
-对于复杂的项目，您可以通过面板配置不同的任务版本镜像，系统基于 `mise exec` 实现了完善的环境隔离，不同版本的依赖包互不冲突。
-
-## 常用工具安装
-
-如果您需要在面板环境中使用 Ansible 或其他通过 pipx 管理的工具，可以使用以下命令进行快速安装：
-
-### 安装 Ansible
-
-baihu-panel推荐通过 `mise` 结合 `pipx` 安装 Ansible，以保持环境隔离且全局可用：
-
-```bash
-# 首先安装 pipx
-mise use -g pipx@latest
-
-# 使用 pipx 安装 ansible
-mise use -g ansible@latest
-```
-
-安装完成后，您可以在「脚本管理」或「定时任务」中直接调用 `ansible` 或 `ansible-playbook` 命令。
-
-
+白虎面板原生支持以下脚本的定时执行：
+- **JavaScript**：`.js`, `.mjs`, `.cjs`
+- **TypeScript**：`.ts`, `.mts`, `.cts`（Node.js 24 原生直接执行，零编译构建）
+- **Bash / Shell**：`.sh`, `.bash`
 
 ---
 
-## 隔离机制说明
+## 依赖管理架构
 
--   baihu-panel通过动态注入 `PATH` 环境和 `mise shims` 将语言环境暴露给系统。
--   每个任务在执行前都会根据任务配置自动加载对应的运行时环境变量。
--   **运行时激活**：自动将 `MISE_DATA_DIR` 等环境变量指向宿主机的持久化挂载目录，确保护持久化可用。
+系统基于标准 Node.js 项目工程管理所有第三方依赖包：
+
+1. **项目自包含**：所有依赖直接维护在 `/app/data/package.json` 与 `/app/data/node_modules/` 目录下；
+2. **纯净脚本目录**：`/app/data/scripts/` 仅保留用户脚本文件，Node.js 执行任务时原生向上寻址加载 `node_modules`；
+3. **秒级安装**：由 pnpm 驱动，支持官方源与镜像源快速切换；
+4. **内置 SDK**：系统默认通过 `pnpm add` 在项目根目录下注入本地 `@baihu` 助手库，用户脚本直接 `import { ... } from 'baihu'` 即可使用。
+
+---
+
+## 使用方法
+
+### 1. 添加依赖
+在白虎面板的「依赖管理」页面，点击「添加依赖」，输入 npm 包名（如 `axios`、`lodash-es`、`dayjs` 等）与可选版本号，系统会自动调用 `pnpm add <package>` 完成安装。
+
+### 2. 批量导入
+在「依赖管理」中支持粘贴 `package.json` 或包名列表批量导入并一次性完成安装。
+
+### 3. 智能补全
+当脚本运行报错提示缺少模块（如 `Cannot find package 'xxx'`）时，可在面板中点击一键自动补全，或通过命令行执行 `baihu depinstall <log_id>` 自动解析并补装缺失依赖。
+

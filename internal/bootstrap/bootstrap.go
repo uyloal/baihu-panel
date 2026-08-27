@@ -13,7 +13,6 @@ import (
 	"github.com/uyloal/baihu-panel/internal/logger"
 	"github.com/uyloal/baihu-panel/internal/router"
 	"github.com/uyloal/baihu-panel/internal/services"
-	"github.com/uyloal/baihu-panel/internal/tunnel"
 	"github.com/uyloal/baihu-panel/internal/utils"
 	"github.com/uyloal/baihu-panel/internal/windows"
 
@@ -28,12 +27,6 @@ type App struct {
 func New() *App {
 	app := InitBasic()
 	app.initRouter()
-	
-	// 初始化完成后将路由引擎注入到隧道模块，以支持高性能的纯内存代理
-	tunnel.SetLocalEngine(app.Router)
-	
-	// 初始化隧道后台服务 (读取配置决定角色并启动服务)
-	tunnel.Init()
 	
 	// 启动系统级后台定时任务调度器
 	executor.InitSysCron()

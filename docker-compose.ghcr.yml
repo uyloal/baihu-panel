@@ -9,7 +9,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./configs:/app/configs
-      - ./envs:/app/envs
     environment:
       - TZ=Asia/Shanghai
       # 以下环境变量可覆盖配置文件（可选）

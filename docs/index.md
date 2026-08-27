@@ -24,8 +24,8 @@ features:
   - title: 任务调度
     details: 支持标准 Cron 表达式，日志不落文件，规避频繁磁盘 IO 问题。
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
-  - title: 多语言支持
-    details: 深度集成 Mise，支持几乎所有主流编程语言的动态安装、多版本切换及依赖管理。
+  - title: 现代 Node 运行时
+    details: 内置 Node.js 24 LTS 与 pnpm 11.24，原生支持 JavaScript / TypeScript 零编译直接执行与全自动依赖管理。
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>'
   - title: 在线管理
     details: 现代响应式 UI，集成在线编辑器、实时终端与 WebSocket 日志流。

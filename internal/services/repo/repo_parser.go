@@ -194,7 +194,6 @@ func upsertRepoTask(parentTask *models.Task, sourceID, name, command, cron, work
 		existing.Name = name
 		existing.Command = models.BigText(command)
 		existing.Schedule = normalizeCron(cron)
-		existing.Languages = parentTask.Languages
 		existing.SourceID = sourceID
 		existing.RepoTaskID = parentTask.ID
 		existing.WorkDir = workDir
@@ -208,7 +207,7 @@ func upsertRepoTask(parentTask *models.Task, sourceID, name, command, cron, work
 		}
 		// 显式白名单模式：只更新脚本核心相关的字段，其他所有字段（如 Enabled, Pin, Remark 等）均不触碰
 		database.DB.Model(&existing).
-			Select("Name", "Command", "Schedule", "WorkDir", "Languages").
+			Select("Name", "Command", "Schedule", "WorkDir").
 			Updates(&existing)
 		return existing.ID, false
 	} else {
@@ -220,7 +219,6 @@ func upsertRepoTask(parentTask *models.Task, sourceID, name, command, cron, work
 			Type:        "task",
 			TriggerType: constant.TriggerTypeCron,
 			Tags:        tag,
-			Languages:   parentTask.Languages,
 			Timeout:     parentTask.Timeout,
 			Config:      models.BigText(defaultTaskConfig),
 			Enabled:     utils.BoolPtr(true),

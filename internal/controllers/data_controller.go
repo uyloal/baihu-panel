@@ -64,15 +64,12 @@ func (dc *DataController) ImportBusinessData(c *gin.Context) {
 		return
 	}
 
-	// 重新启动任务和通知相关的代理
+	// 重新启动任务
 	if len(req.Tasks) > 0 {
 		for i := range req.Tasks {
 			task := &req.Tasks[i]
-			if utils.DerefBool(task.Enabled, true) && (task.AgentID == nil || *task.AgentID == "") {
+			if utils.DerefBool(task.Enabled, true) {
 				dc.taskController.executorService.AddCronTask(task)
-			}
-			if task.AgentID != nil && *task.AgentID != "" {
-				dc.taskController.agentWSManager.BroadcastTasks(*task.AgentID)
 			}
 		}
 	}

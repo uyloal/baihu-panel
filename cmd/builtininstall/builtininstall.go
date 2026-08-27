@@ -6,14 +6,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 
 	"github.com/uyloal/baihu-panel/cmd/clibase"
+	"github.com/uyloal/baihu-panel/internal/constant"
+	"github.com/uyloal/baihu-panel/internal/services/deps"
 	"github.com/uyloal/baihu-panel/internal/utils"
 )
 
 func printHelp() {
-	clibase.PrintSubCommandUsage("白虎面板内建依赖安装工具", "baihu builtininstall", "", nil)
+	clibase.PrintSubCommandUsage("白虎面板内建 SDK 依赖安装工具", "baihu builtininstall", "", nil)
 }
 
 // Run 执行内建包安装逻辑
@@ -30,75 +31,53 @@ func Run(args []string) {
 		return
 	}
 
-	fmt.Println(">> [Builtin] 开始为 mise 环境安装内建包...")
+	fmt.Println(">> [Builtin] 开始为 data 项目初始化与安装 baihu SDK...")
 
-	// 1. 确定内建包路径
-	// 优先使用 /www/builtin (Docker 环境)，否则尝试相对于二进制文件的当前目录
-	builtinPath := "/www/builtin"
-	if _, err := os.Stat(builtinPath); os.IsNotExist(err) {
-		// 回退到当前目录下的 builtin
-		pwd, _ := os.Getwd()
-		builtinPath = filepath.Join(pwd, "builtin")
+	dataDir := utils.ResolveAbsDataDir()
+	scriptsDir := utils.ResolveAbsScriptsDir()
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		fmt.Printf(">> [Builtin] 创建 data 目录失败: %v\n", err)
+		return
 	}
+	_ = os.MkdirAll(scriptsDir, 0755)
 
-	if _, err := os.Stat(builtinPath); os.IsNotExist(err) {
-		fmt.Printf(">> [Builtin] 错误: 找不到内建包目录: %s\n", builtinPath)
+	nodeManager := deps.NewNodeManager(dataDir)
+	if err := nodeManager.EnsurePackageJson(); err != nil {
+		fmt.Printf(">> [Builtin] 初始化 package.json 失败: %v\n", err)
 		return
 	}
 
-	// 2. 安装 Node.js 包
-	installForLanguage("node", filepath.Join(builtinPath, "nodejs"))
-
-	// 3. 安装 Python 包
-	installForLanguage("python", filepath.Join(builtinPath, "python"))
-
-	fmt.Println(">> [Builtin] 内建包安装流程完成")
-}
-
-func installForLanguage(lang, pkgPath string) {
-	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
-		fmt.Printf(">> [Builtin] 警告: %s 的内建包目录不存在: %s\n", lang, pkgPath)
-		return
+	// 查找 packages/baihu 路径
+	baihuPkgPath := ""
+	pwd, _ := os.Getwd()
+	possiblePaths := []string{
+		"/app/packages/baihu",
+		"/www/packages/baihu",
+		filepath.Join(constant.ResolveAppRootDir(), "packages", "baihu"),
+		filepath.Join(pwd, "packages", "baihu"),
+	}
+	for _, p := range possiblePaths {
+		if _, err := os.Stat(filepath.Join(p, "package.json")); err == nil {
+			baihuPkgPath = p
+			break
+		}
 	}
 
-	versions, err := utils.ListMiseInstalledVersions(lang)
+	var cmd *exec.Cmd
+	if baihuPkgPath != "" {
+		fmt.Printf(">> [Builtin] 正在从本地路径引入 baihu: %s\n", baihuPkgPath)
+		cmd = exec.Command("pnpm", "add", baihuPkgPath)
+	} else {
+		fmt.Println(">> [Builtin] 正在执行 pnpm install...")
+		cmd = exec.Command("pnpm", "install")
+	}
+
+	cmd.Dir = dataDir
+	cmd.Env = os.Environ()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf(">> [Builtin] 错误: 获取 %s 的 mise 版本列表失败: %v\n", lang, err)
-		return
-	}
-
-	if len(versions) == 0 {
-		fmt.Printf(">> [Builtin] 未发现已安装的 %s 版本，跳过\n", lang)
-		return
-	}
-
-	for _, v := range versions {
-		fmt.Printf(">> [Builtin] 正在为 %s@%s 安装内建包...\n", lang, v)
-
-		var subCmdArgs []string
-		if lang == "node" {
-			// 使用 npm i -g 进行全局安装
-			subCmdArgs = []string{"npm", "i", "-g", pkgPath}
-		} else {
-			// python 改为标准安装 (非 -e)，避免 Docker 内软链接可能导致的路径丢失问题
-			subCmdArgs = []string{"pip", "install", "--force-reinstall", pkgPath}
-		}
-
-		// 构建参数列表: [mise, exec, lang@v, --, cmd...]
-		fullArgs := utils.BuildMiseCommandArgsSimple(subCmdArgs, lang, v)
-
-		var cmd *exec.Cmd
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd", append([]string{"/c"}, fullArgs...)...)
-		} else {
-			cmd = exec.Command(fullArgs[0], fullArgs[1:]...)
-		}
-
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Printf(">> [Builtin] 错误: 为 %s@%s 安装失败: %v\n输出: %s\n", lang, v, err, string(out))
-		} else {
-			fmt.Printf(">> [Builtin] 为 %s@%s 安装成功\n", lang, v)
-		}
+		fmt.Printf(">> [Builtin] 安装内建 SDK 警告: %v\n输出: %s\n", err, string(out))
+	} else {
+		fmt.Printf(">> [Builtin] 内建 SDK 安装成功\n")
 	}
 }

@@ -65,26 +65,6 @@ export interface MonitorStats {
     }[]
   }
 }
-export let activeInterconnectNodeId = localStorage.getItem('activeInterconnectNodeId') || ''
-export let activeInterconnectNodeName = localStorage.getItem('activeInterconnectNodeName') || ''
-
-export function setActiveInterconnectNodeId(id: string, name?: string) {
-  activeInterconnectNodeId = id
-  if (name !== undefined) {
-    activeInterconnectNodeName = name
-  }
-  localStorage.removeItem('site_settings_cache')
-  if (id) {
-    localStorage.setItem('activeInterconnectNodeId', id)
-    if (name) localStorage.setItem('activeInterconnectNodeName', name)
-    document.cookie = `active_interconnect_node_id=${id}; path=/; max-age=${7 * 24 * 3600}`
-  } else {
-    localStorage.removeItem('activeInterconnectNodeId')
-    localStorage.removeItem('activeInterconnectNodeName')
-    activeInterconnectNodeName = ''
-    document.cookie = `active_interconnect_node_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC`
-  }
-}
 
 export async function request<T>(url: string, options?: RequestInit): Promise<T> {
   let res: Response
@@ -148,13 +128,12 @@ export const api = {
       request<void>('/auth/otp/disable', { method: 'POST', body: JSON.stringify(data) })
   },
   tasks: {
-    list: (params?: { page?: number; page_size?: number; name?: string; agent_id?: string; tags?: string; type?: string; sort_by?: string; order?: string }) => {
+    list: (params?: { page?: number; page_size?: number; name?: string; tags?: string; type?: string; sort_by?: string; order?: string }) => {
       const query = new URLSearchParams()
       if (params?.page) query.set('page', String(params.page))
       if (params?.page_size) query.set('page_size', String(params.page_size))
       if (params?.name) query.set('name', params.name)
       if (params?.tags) query.set('tags', params.tags)
-      if (params?.agent_id) query.set('agent_id', params.agent_id)
       if (params?.type) query.set('type', params.type)
       if (params?.sort_by) query.set('sort_by', params.sort_by)
       if (params?.order) query.set('order', params.order)
@@ -169,16 +148,15 @@ export const api = {
       return request(`/tasks/${id}${queryString ? '?' + queryString : ''}`, { method: 'DELETE' })
     },
     batchDelete: (ids: string[]) => request<{ count: number }>('/tasks/batch-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
-    batchDeleteByQuery: (params?: { name?: string, agent_id?: string, tags?: string, type?: string }) => {
+    batchDeleteByQuery: (params?: { name?: string, tags?: string, type?: string }) => {
       const query = new URLSearchParams()
       if (params?.name) query.append('name', params.name)
-      if (params?.agent_id) query.append('agent_id', params.agent_id)
       if (params?.tags) query.append('tags', params.tags)
       if (params?.type && params.type !== 'all') query.append('type', params.type)
       return request<{ count: number }>(`/tasks/batch-by-query?${query.toString()}`, { method: 'DELETE' })
     },
-    execute: (id: string) => request<ExecutionResult>(`/execute/task/${id}`, { method: 'POST' }),
-    stop: (logID: string) => request(`/tasks/stop/${logID}`, { method: 'POST' }),
+    execute: (id: string) => request<ExecutionResult>(`/tasks/${id}/execute`, { method: 'POST' }),
+    stop: (logID: string) => request(`/tasks/${logID}/stop`, { method: 'POST' }),
     tags: () => request<string[]>('/tasks/tags')
   },
   scripts: {
@@ -244,10 +222,10 @@ export const api = {
     clear: (taskId?: string) => request('/logs/clear', { method: 'POST', body: JSON.stringify({ task_id: taskId }) })
   },
   dashboard: {
-    stats: () => request<Stats>('/stats'),
-    sentence: () => request<{ sentence: string }>('/sentence'),
-    sendStats: (days?: number) => request<DailyStats[]>(`/sendstats${days ? `?days=${days}` : ''}`),
-    taskStats: (days?: number) => request<TaskStatsItem[]>(`/taskstats${days ? `?days=${days}` : ''}`)
+    stats: () => request<Stats>('/dashboard/stats'),
+    sentence: () => request<{ sentence: string }>('/dashboard/sentence'),
+    sendStats: (days?: number) => request<DailyStats[]>(`/dashboard/sendstats${days ? `?days=${days}` : ''}`),
+    taskStats: (days?: number) => request<TaskStatsItem[]>(`/dashboard/taskstats${days ? `?days=${days}` : ''}`)
   },
   settings: {
     getMonitor: () => request<MonitorStats>('/monitor'),
@@ -349,13 +327,8 @@ export const api = {
     }
   },
   deps: {
-    list: (params?: { language?: string; lang_version?: string }) => {
-      const query = new URLSearchParams()
-      if (params?.language) query.set('language', params.language)
-      if (params?.lang_version) query.set('lang_version', params.lang_version)
-      return request<Dependency[]>(`/deps?${query}`)
-    },
-    create: (data: { name: string; version?: string; language: string; lang_version?: string; remark?: string }) =>
+    list: () => request<Dependency[]>('/deps'),
+    create: (data: { name: string; version?: string; remark?: string }) =>
       request<Dependency>('/deps', { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: string) => request(`/deps/${id}`, { method: 'DELETE' }),
     install: (data: any) => request<any>('/deps/install', { method: 'POST', body: JSON.stringify(data) }),
@@ -365,54 +338,14 @@ export const api = {
       return request<any>(`/deps/uninstall/${id}${query}`, { method: 'POST' })
     },
     reinstall: (id: string) => request(`/deps/reinstall/${id}`, { method: 'POST' }),
-    reinstallAll: (language: string, lang_version?: string) => {
-      const query = new URLSearchParams({ language })
-      if (lang_version) query.set('lang_version', lang_version)
-      return request(`/deps/reinstall-all?${query}`, { method: 'POST' })
-    },
-    getReinstallAllCmd: (language: string, lang_version?: string) => {
-      const query = new URLSearchParams({ language })
-      if (lang_version) query.set('lang_version', lang_version)
-      return request<{ command: string }>(`/deps/reinstall-all-cmd?${query}`, { method: 'POST' })
-    },
-    getBatchInstallCmd: (data: { items: { name: string; version?: string; language: string; lang_version?: string }[] }) =>
+    reinstallAll: () => request('/deps/reinstall-all', { method: 'POST' }),
+    getReinstallAllCmd: () => request<{ command: string }>('/deps/reinstall-all-cmd', { method: 'POST' }),
+    getBatchInstallCmd: (data: { items: { name: string; version?: string }[] }) =>
       request<{ command: string }>('/deps/batch-install-cmd', { method: 'POST', body: JSON.stringify(data) }),
-    import: (data: { language: string; lang_version?: string; content: string; import_db?: boolean }) =>
+    import: (data: { content: string; import_db?: boolean }) =>
       request<{ dependencies: Dependency[]; command: string }>('/deps/import', { method: 'POST', body: JSON.stringify(data) }),
-    getInstalled: (language: string, lang_version?: string) => {
-      const query = new URLSearchParams({ language })
-      if (lang_version) query.set('lang_version', lang_version)
-      return request<Dependency[]>(`/deps/installed?${query}`)
-    },
+    getInstalled: () => request<Dependency[]>('/deps/installed'),
     getInstallSuggestCmd: (logID: string) => request<{ command: string }>(`/deps/install-suggest-cmd?log_id=${logID}`)
-  },
-  agents: {
-    list: () => request<Agent[]>('/agents'),
-    getVersion: () => request<{ version: string; platforms: { os: string; arch: string; filename: string }[] }>('/agents/version'),
-    update: (id: string, data: { name: string; description?: string; enabled: boolean; scheduler_config: SchedulerConfig | null }) =>
-      request('/agents/' + id, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => request('/agents/' + id, { method: 'DELETE' }),
-    forceUpdate: (id: string) => request('/agents/' + id + '/update', { method: 'POST' }),
-    downloadUrl: (os: string, arch: string) => `${API_BASE_URL}/agent/download?os=${os}&arch=${arch}`,
-    // 令牌管理
-    listTokens: () => request<AgentToken[]>('/agents/tokens'),
-    createToken: (data: { remark?: string; max_uses?: number; expires_at?: string }) =>
-      request<AgentToken>('/agents/tokens', { method: 'POST', body: JSON.stringify(data) }),
-    deleteToken: (id: string) => request('/agents/tokens/' + id, { method: 'DELETE' }),
-    updateToken: (id: string, data: { remark?: string; max_uses?: number; expires_at?: string }) =>
-      request<AgentToken>('/agents/tokens/' + id, { method: 'PUT', body: JSON.stringify(data) })
-  },
-  mise: {
-    list: () => request<MiseLanguage[]>('/mise/ls'),
-    sync: () => request<void>('/mise/sync', { method: 'POST' }),
-    plugins: () => request<string[]>('/mise/plugins'),
-    versions: (plugin: string) => request<string[]>(`/mise/versions?plugin=${plugin}`),
-    verifyCommand: (plugin: string, version: string) => request<{ command: string }>(`/mise/verify-cmd?plugin=${plugin}&version=${version}`),
-    useGlobal: (plugin: string, version: string) => request<void>('/mise/use-global', { method: 'POST', body: JSON.stringify({ plugin, version }) }),
-    unsetGlobal: (plugin: string, version: string) => request<void>('/mise/unset-global', { method: 'POST', body: JSON.stringify({ plugin, version }) }),
-    getEnvs: () => request<Record<string, string>>('/mise/envs'),
-    setEnv: (key: string, value: string) => request<void>('/mise/envs', { method: 'POST', body: JSON.stringify({ key, value }) }),
-    unsetEnv: (key: string) => request<void>(`/mise/envs?key=${key}`, { method: 'DELETE' })
   },
   terminal: {
     cmds: () => request<{ name: string, description: string }[]>('/terminal/cmds')
@@ -516,8 +449,6 @@ export interface Task {
   retry_interval: number
   random_range: number
   pin_type: 'none' | 'top'
-  languages: { name: string; version: string }[]
-  agent_id: string | null
   enabled: boolean
   last_run: string
   next_run: string
@@ -710,61 +641,11 @@ export interface TaskStatsItem {
 export interface Dependency {
   id: string
   name: string
-  version: string
-  language: string
-  lang_version: string
-  remark: string
-  log: string
-  created_at: string
-  updated_at: string
-}
-
-export interface Agent {
-  id: string
-  name: string
-  token: string
-  machine_id: string
-  description: string
-  status: string
-  last_seen: string
-  ip: string
-  version: string
-  build_time: string
-  hostname: string
-  os: string
-  arch: string
-  enabled: boolean
-  scheduler_config: SchedulerConfig | null
-  created_at: string
-  updated_at: string
-}
-
-export interface SchedulerConfig {
-  worker_count: number
-  queue_size: number
-  rate_interval: number
-  verbose: boolean
-  strict_queue: boolean
-}
-
-export interface AgentToken {
-  id: string
-  token: string
-  remark: string
-  max_uses: number
-  used_count: number
-  expires_at: string | null
-  enabled: boolean
-  created_at: string
-}
-
-export interface MiseLanguage {
-  plugin: string
-  version: string
-  source: { type?: string; path?: string } | string
-  is_global: boolean
-  install_path?: string
-  installed_at?: string  // 安装日期
+  version?: string
+  remark?: string
+  log?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface ChannelType {

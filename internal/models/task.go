@@ -1,39 +1,8 @@
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"fmt"
 	"github.com/uyloal/baihu-panel/internal/constant"
 )
-
-// TaskLanguages 自定义语言配置列表类型，处理 JSON 序列化
-type TaskLanguages []map[string]string
-
-func (t TaskLanguages) Value() (driver.Value, error) {
-	if t == nil {
-		return "[]", nil
-	}
-	b, err := json.Marshal(t)
-	return string(b), err
-}
-
-func (t *TaskLanguages) Scan(v interface{}) error {
-	if v == nil {
-		*t = nil
-		return nil
-	}
-	var data []byte
-	switch s := v.(type) {
-	case string:
-		data = []byte(s)
-	case []byte:
-		data = s
-	default:
-		return fmt.Errorf("invalid type for TaskLanguages: %T", v)
-	}
-	return json.Unmarshal(data, t)
-}
 
 // CleanConfig 清理配置结构
 type CleanConfig struct {
@@ -62,7 +31,7 @@ type RepoConfig struct {
 	RepoDirName    string `json:"repo_dir_name"`   // 自定义仓库目录名
 }
 
-// TaskConfig  任务配置  RepoConfig+TaskConfig=task.config
+// TaskConfig 任务配置 RepoConfig+TaskConfig=task.config
 type TaskConfig struct {
 	Concurrency int  `json:"$task_concurrency"` // 0: disable concurrency, 1: enable concurrency
 	AllEnvs     bool `json:"$task_all_envs"`    // 开启则注入全部环境变量
@@ -70,37 +39,35 @@ type TaskConfig struct {
 
 // Task 代表一个计划任务
 type Task struct {
-	ID             string        `json:"id" gorm:"primaryKey;size:20"`
-	Name           string        `json:"name" gorm:"size:255;not null"`
-	Remark         string        `json:"remark" gorm:"size:255;default:''"`
-	PinType        string        `json:"pin_type" gorm:"size:20;default:none;index"` // 置顶类型: constant.PinTypeNone, constant.PinTypeTop
-	Command        BigText       `json:"command"`                                    // 普通任务的命令
-	PreCommand     BigText       `json:"pre_command"`                                // 执行前的命令
-	PostCommand    BigText       `json:"post_command"`                               // 执行后的命令
-	Tags           string        `json:"tags" gorm:"-"`                              // 标签，逗号分隔
-	Type           string        `json:"type" gorm:"size:20;default:'task'"`         // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
-	TriggerType    string        `json:"trigger_type" gorm:"size:25;default:'cron'"` // 触发类型: constant.TriggerTypeCron, constant.TriggerTypeBaihuStartup
-	Config         BigText       `json:"config"`                                     // 配置 JSON（仓库同步配置等）
-	Schedule       string        `json:"schedule" gorm:"size:100"`                   // cron 表达式
-	Timeout        int           `json:"timeout" gorm:"default:30"`                  // 超时时间（分钟），默认30分钟
-	WorkDir        string        `json:"work_dir" gorm:"size:255;default:''"`        // 工作目录，为空则使用 scripts 目录
-	CleanConfig    string        `json:"clean_config" gorm:"size:255;default:''"`    // 清理配置 JSON
-	Envs           BigText       `json:"envs" gorm:"-"`                              // 环境变量ID列表，逗号分隔
-	Languages      TaskLanguages `json:"languages" gorm:"type:text"`                 // 针对本地任务的语言配置列表
-	AgentID        *string       `json:"agent_id" gorm:"size:20;index"`              // Agent ID，为空表示本地执行
-	RetryCount     int           `json:"retry_count" gorm:"default:0"`               // 失败重试次数
-	RetryInterval  int           `json:"retry_interval" gorm:"default:0"`            // 失败重试间隔(秒)
-	RandomRange    int           `json:"random_range" gorm:"default:0"`              // 随机延迟范围(秒)
-	Enabled        *bool         `json:"enabled" gorm:"default:true"`
-	RunningGo      BigText       `json:"running_go"` // 正在运行的 go routine id 数组 (JSON)
-	RuntimeEnvs    []string      `json:"-" gorm:"-"` // 运行时环境变量（非持久化）
-	RuntimeSecrets []string      `json:"-" gorm:"-"` // 运行时安全机密（非持久化）
-	LastRun        *LocalTime    `json:"last_run"`
-	NextRun        *LocalTime    `json:"next_run"`
-	SourceID       string        `json:"source_id" gorm:"size:255;index"`   // 脚本资源唯一标识（路径 sanitized）
-	RepoTaskID     string        `json:"repo_task_id" gorm:"size:20;index"` // 所属的仓库任务 ID
-	CreatedAt      LocalTime     `json:"created_at"`
-	UpdatedAt      LocalTime     `json:"updated_at"`
+	ID             string     `json:"id" gorm:"primaryKey;size:20"`
+	Name           string     `json:"name" gorm:"size:255;not null"`
+	Remark         string     `json:"remark" gorm:"size:255;default:''"`
+	PinType        string     `json:"pin_type" gorm:"size:20;default:none;index"` // 置顶类型: constant.PinTypeNone, constant.PinTypeTop
+	Command        BigText    `json:"command"`                                    // 普通任务的命令
+	PreCommand     BigText    `json:"pre_command"`                                // 执行前的命令
+	PostCommand    BigText    `json:"post_command"`                               // 执行后的命令
+	Tags           string     `json:"tags" gorm:"-"`                              // 标签，逗号分隔
+	Type           string     `json:"type" gorm:"size:20;default:'task'"`         // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
+	TriggerType    string     `json:"trigger_type" gorm:"size:25;default:'cron'"` // 触发类型: constant.TriggerTypeCron, constant.TriggerTypeBaihuStartup
+	Config         BigText    `json:"config"`                                     // 配置 JSON（仓库同步配置等）
+	Schedule       string     `json:"schedule" gorm:"size:100"`                   // cron 表达式
+	Timeout        int        `json:"timeout" gorm:"default:30"`                  // 超时时间（分钟），默认30分钟
+	WorkDir        string     `json:"work_dir" gorm:"size:255;default:''"`        // 工作目录，为空则使用 scripts 目录
+	CleanConfig    string     `json:"clean_config" gorm:"size:255;default:''"`    // 清理配置 JSON
+	Envs           BigText    `json:"envs" gorm:"-"`                              // 环境变量ID列表，逗号分隔
+	RetryCount     int        `json:"retry_count" gorm:"default:0"`               // 失败重试次数
+	RetryInterval  int        `json:"retry_interval" gorm:"default:0"`            // 失败重试间隔(秒)
+	RandomRange    int        `json:"random_range" gorm:"default:0"`              // 随机延迟范围(秒)
+	Enabled        *bool      `json:"enabled" gorm:"default:true"`
+	RunningGo      BigText    `json:"running_go"` // 正在运行的 go routine id 数组 (JSON)
+	RuntimeEnvs    []string   `json:"-" gorm:"-"` // 运行时环境变量（非持久化）
+	RuntimeSecrets []string   `json:"-" gorm:"-"` // 运行时安全机密（非持久化）
+	LastRun        *LocalTime `json:"last_run"`
+	NextRun        *LocalTime `json:"next_run"`
+	SourceID       string     `json:"source_id" gorm:"size:255;index"`   // 脚本资源唯一标识（路径 sanitized）
+	RepoTaskID     string     `json:"repo_task_id" gorm:"size:20;index"` // 所属的仓库任务 ID
+	CreatedAt      LocalTime  `json:"created_at"`
+	UpdatedAt      LocalTime  `json:"updated_at"`
 }
 
 func (t *Task) IsRunning() bool {
@@ -146,24 +113,12 @@ func (t *Task) GetEnvs() string {
 	return string(t.Envs)
 }
 
-func (t *Task) GetLanguages() []map[string]string {
-	return []map[string]string(t.Languages)
-}
-
 func (t *Task) GetEnvVars() []string {
 	return t.RuntimeEnvs
 }
 
 func (t *Task) GetSecrets() []string {
 	return t.RuntimeSecrets
-}
-
-func (t *Task) GetUseMise() bool {
-	return t.AgentID == nil || *t.AgentID == ""
-}
-
-func (t *Task) UseMise() bool {
-	return t.GetUseMise()
 }
 
 // CronTask 计划任务接口
@@ -179,7 +134,6 @@ func (t *Task) GetRandomRange() int {
 type TaskLog struct {
 	ID        string     `json:"id" gorm:"primaryKey;size:20"`
 	TaskID    string     `json:"task_id" gorm:"size:20;index"`
-	AgentID   *string    `json:"agent_id" gorm:"size:20;index"` // Agent ID，为空表示本地执行
 	Command   BigText    `json:"command"`
 	Output    BigText    `json:"-"`                           // gzip+base64 压缩后的日志
 	Error     BigText    `json:"error"`                       // 额外的系统错误信息

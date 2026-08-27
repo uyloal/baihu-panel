@@ -76,13 +76,12 @@ flowchart TD
     end
 
     subgraph Runtime ["底座与运行时 (Node.js & pnpm)"]
-        STORE["pnpm CAS (~/pnpm-store)"]
         SCRIPTS["脚本工作区 (/app/data/scripts)"]
         NODE["Node 运行时 (ESM / TS 原生)"]
     end
 
     S_UI --> SC --> SCRIPTS
-    D_UI --> DC --> STORE
+    D_UI --> DC --> SCRIPTS
     E_UI --> EC
     T_UI --> TC --> EX
     N_UI --> NC
@@ -90,7 +89,6 @@ flowchart TD
     M_UI --> MC & EX
     B_UI --> BC
     EX -->|注入机密| NODE
-    EX -->|挂载 node_modules| NODE
     NODE --> SCRIPTS
     EX -->|任务状态事件| NC
 ```
@@ -104,7 +102,7 @@ flowchart TD
 
 #### 支持格式
 - **JavaScript / ECMAScript**：`.js`, `.mjs`, `.cjs`
-- **TypeScript**：`.ts`, `.mts`, `.cts`（Node 22+ 原生直接执行，无需编译转译）
+- **TypeScript**：`.ts`, `.mts`, `.cts`（Node 24+ 原生直接执行，无需编译转译）
 - **配置文件与说明**：`.json`, `.env`, `.md`, `.yaml`, `.sh`
 
 #### 关键 API
@@ -119,11 +117,11 @@ flowchart TD
 ### 2. 依赖管理模块 (Dependency Management - Pure Node & pnpm)
 
 #### 核心职责
-全面采用 **pnpm 内容寻址存储（CAS）** 驱动的纯 Node 依赖管理体系，彻底解决 ESM 模式下全局包无法引用的顽疾。
+全面采用纯 Node.js & pnpm 生态体系，各类工具均使用原生默认配置，`/app/data` 作为 Node.js 项目根目录，`scripts/` 保持纯净脚本文件。
 
 #### 核心机制
-1. **全局 CAS 存储**：存储路径位于 `/app/envs/pnpm-store`（持久化卷），跨任务硬链接复用，秒级安装，节省 80%+ 磁盘。
-2. **工作区软链寻址**：在 `/app/data/node_modules` 建立软链接指向全局模块，Node.js 无论在 CJS 还是 ESM 模式下均能向上递归命中，**无需任何 `NODE_PATH` 黑魔法**。
+1. **项目自包含**：Node.js 项目根目录为 `/app/data`（包含 `package.json` 与 `node_modules/`），由 pnpm 默认缓存与寻址行为驱动。
+2. **纯净脚本与原生寻址**：`/app/data/scripts` 保持纯净的脚本文件。Node.js 执行脚本时，原生向上递归至 `/app/data/node_modules` 寻址，天然支持 ESM、CommonJS 与 TypeScript，**无需任何 `NODE_PATH` 黑魔法**。
 3. **数据模型 (`models.Dependency`)**：
    ```go
    type Dependency struct {
@@ -365,9 +363,9 @@ baihu-minimal/
 # ================================
 # Stage 1: Build Web Frontend
 # ================================
-FROM node:22-alpine AS web-builder
+FROM node:24-alpine AS web-builder
 WORKDIR /app/web
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY web/ ./
@@ -376,41 +374,39 @@ RUN pnpm run build
 # ================================
 # Stage 2: Build Go Binary
 # ================================
-FROM golang:1.22-alpine AS server-builder
+FROM golang:1.24-alpine AS server-builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web-builder /app/web/dist ./internal/static/dist
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o baihu-server cmd/server/main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o baihu cmd/main.go
 
 # ================================
 # Stage 3: Minimal Production Image
 # ================================
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PNPM_HOME=/app/envs/pnpm
-ENV PNPM_STORE_DIR=/app/envs/pnpm-store
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PNPM_HOME=/root/.pnpm
+ENV PATH="/app/data/node_modules/.bin:$PNPM_HOME/bin:$PNPM_HOME:/usr/local/bin:$PATH"
 
 # 安装 Git (用于仓库同步) 及基础工具
 RUN apk add --no-cache tzdata ca-certificates bash curl git openssh-client \
-    && corepack enable && corepack prepare pnpm@latest --activate \
-    && pnpm config set store-dir /app/envs/pnpm-store
+    && corepack enable && corepack prepare pnpm@11.24.0 --activate \
+    && pnpm config set global-bin-dir /root/.pnpm/bin
 
 # 拷贝二进制产物与内置 SDK
-COPY --from=server-builder /app/baihu-server /usr/local/bin/baihu-server
-COPY builtin/ /www/builtin
+COPY --from=server-builder /app/baihu /usr/local/bin/baihu
+COPY packages/baihu /app/packages/baihu
 COPY docker/docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 8052
-VOLUME ["/app/data", "/app/envs"]
+VOLUME ["/app/data"]
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["baihu-server"]
 ```
 
 ### 2. docker-compose.yml 部署模板
@@ -419,17 +415,17 @@ CMD ["baihu-server"]
 version: '3.8'
 
 services:
-  baihu-minimal:
-    image: uyloal/baihu-minimal:latest
-    container_name: baihu-minimal
+  baihu:
+    image: ghcr.io/uyloal/baihu:latest
+    container_name: baihu
     restart: unless-stopped
     ports:
       - "8052:8052"
     environment:
       - TZ=Asia/Shanghai
     volumes:
-      - ./data:/app/data          # 脚本、Git 仓库与 SQLite 数据库持久化
-      - ./envs:/app/envs          # pnpm 依赖与全局 CAS 存储
+      - ./data:/app/data          # 脚本、依赖与 SQLite 数据库全量持久化
+      - ./configs:/app/configs    # 配置文件持久化 (可选)
 ```
 
 ---

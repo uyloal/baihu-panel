@@ -42,18 +42,12 @@ func (dc *DashboardController) GetStats(c *gin.Context) {
 	// 今日执行总数
 	today := time.Now().Format("2006-01-02")
 	database.DB.Model(&models.SendStats{}).Where("day = ?", today).Select("COALESCE(SUM(num), 0)").Scan(&todayExecs)
+	if todayExecs == 0 {
+		database.DB.Model(&models.TaskLog{}).Where("created_at >= ?", today+" 00:00:00").Count(&todayExecs)
+	}
 
-	// 调度统计：本地调度 + Agent 调度
-	// 本地调度：agent_id 为 NULL 且 enabled = true 的任务
-	localScheduled := dc.executorService.GetScheduledCount()
-
-	// Agent 调度：agent_id 不为 NULL 且 enabled = true 的任务
-	var agentScheduled int64
-	database.DB.Model(&models.Task{}).
-		Where("agent_id IS NOT NULL AND enabled = ?", true).
-		Count(&agentScheduled)
-
-	totalScheduled := localScheduled + int(agentScheduled)
+	// 调度统计
+	totalScheduled := dc.executorService.GetScheduledCount()
 
 	// 正在运行：目前只能统计本地运行的任务
 	// Agent 端的运行状态需要通过心跳上报（未来优化）
@@ -118,6 +112,27 @@ func (dc *DashboardController) GetSendStats(c *gin.Context) {
 		}
 	}
 
+	// 兜底：如果 send_stats 没有任何历史数据，从 task_logs 动态汇总
+	if len(stats) == 0 {
+		var logs []models.TaskLog
+		database.DB.Where("created_at >= ?", startDay+" 00:00:00").Find(&logs)
+		for _, l := range logs {
+			if !l.CreatedAt.Time().IsZero() {
+				d := l.CreatedAt.Time().Format("2006-01-02")
+				if _, ok := dayMap[d]; !ok {
+					dayMap[d] = &DailyStats{Day: d}
+				}
+				ds := dayMap[d]
+				ds.Total++
+				if l.Status == constant.TaskStatusSuccess {
+					ds.Success++
+				} else if l.Status == constant.TaskStatusFailed || l.Status == constant.TaskStatusTimeout {
+					ds.Failed++
+				}
+			}
+		}
+	}
+
 	// 填充缺失的日期
 	result := make([]DailyStats, 0, days)
 	for i := days - 1; i >= 0; i-- {
@@ -168,6 +183,32 @@ func (dc *DashboardController) GetTaskStats(c *gin.Context) {
 		Group("task_id").
 		Order("total DESC").
 		Find(&results)
+
+	// 兜底：如果 send_stats 暂无数据，从 task_logs 聚合
+	if len(results) == 0 {
+		var logResults []struct {
+			TaskID string
+			Total  int
+		}
+		database.DB.Model(&models.TaskLog{}).
+			Select("task_id, COUNT(*) as total").
+			Where("created_at >= ?", startDay+" 00:00:00").
+			Group("task_id").
+			Order("total DESC").
+			Find(&logResults)
+
+		for _, lr := range logResults {
+			if lr.TaskID != "" {
+				results = append(results, struct {
+					TaskID string
+					Total  int
+				}{
+					TaskID: lr.TaskID,
+					Total:  lr.Total,
+				})
+			}
+		}
+	}
 
 	// 获取任务名称
 	taskIDs := make([]string, 0, len(results))

@@ -90,8 +90,6 @@ func (m *CronManager) AddTask(task CronTask) error {
 	timeout := task.GetTimeout()
 	workDir := task.GetWorkDir()
 	envs := task.GetEnvs()
-	languages := task.GetLanguages()
-	useMise := task.UseMise()
 	secrets := task.GetSecrets()
 
 	schedule := strings.TrimSpace(task.GetSchedule())
@@ -122,9 +120,7 @@ func (m *CronManager) AddTask(task CronTask) error {
 					}
 					return ParseEnvVars(envs)
 				}(),
-				Secrets:   secrets,
-				Languages: languages,
-				UseMise:   useMise,
+				Secrets: secrets,
 			}
 		}
 
@@ -163,10 +159,9 @@ func (m *CronManager) AddTask(task CronTask) error {
 	// 初始触发一次下次运行时间通知
 	go func() {
 		req := &ExecutionRequest{
-			TaskID:  taskID,
-			Name:    name,
-			Type:    TaskTypeCron,
-			UseMise: task.UseMise(),
+			TaskID: taskID,
+			Name:   name,
+			Type:   TaskTypeCron,
 		}
 		m.triggerNextRunEvent(taskID, req)
 	}()

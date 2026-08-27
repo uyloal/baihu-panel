@@ -80,9 +80,6 @@ func (ec *EnvController) CreateEnvVar(c *gin.Context) {
 		envVar.Tags = req.Tags
 	}
 	
-	// Broadcast tasks to all agents because global envs changed
-	services.GetAgentWSManager().BroadcastTasksToAll()
-	
 	utils.Success(c, vo.ToEnvVO(envVar))
 }
 
@@ -216,9 +213,6 @@ func (ec *EnvController) UpdateEnvVar(c *gin.Context) {
 	relation.DataRelation.SaveTags(envVar.ID, constant.RelationTypeEnvTag, req.Tags)
 	envVar.Tags = req.Tags
 
-	// Broadcast tasks to all agents because global envs changed
-	services.GetAgentWSManager().BroadcastTasksToAll()
-
 	utils.Success(c, vo.ToEnvVO(envVar))
 }
 
@@ -258,9 +252,6 @@ func (ec *EnvController) DeleteEnvVar(c *gin.Context) {
 		utils.NotFound(c, "环境变量不存在或删除失败")
 		return
 	}
-
-	// Broadcast tasks to all agents because global envs changed
-	services.GetAgentWSManager().BroadcastTasksToAll()
 
 	utils.SuccessMsg(c, "删除成功")
 }
@@ -384,6 +375,5 @@ func (ec *EnvController) BulkSaveEnv(c *gin.Context) {
 		}
 	}
 
-	services.GetAgentWSManager().BroadcastTasksToAll()
 	utils.Success(c, nil)
 }

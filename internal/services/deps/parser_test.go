@@ -4,43 +4,6 @@ import (
 	"testing"
 )
 
-func TestParseRequirements(t *testing.T) {
-	content := `
-# This is a comment
-requests==2.31.0
-numpy>=1.20,<2.0
-gunicorn
--r other-requirements.txt
-  pandas ~= 1.3.0  
-`
-	deps := ParseRequirements(content)
-	if len(deps) != 4 {
-		t.Fatalf("expected 4 dependencies, got %d", len(deps))
-	}
-
-	expected := []struct {
-		name    string
-		version string
-	}{
-		{"requests", "2.31.0"},
-		{"numpy", "1.20"},
-		{"gunicorn", ""},
-		{"pandas", "1.3.0"},
-	}
-
-	for i, exp := range expected {
-		if deps[i].Name != exp.name {
-			t.Errorf("expected name %s, got %s", exp.name, deps[i].Name)
-		}
-		if deps[i].Version != exp.version {
-			t.Errorf("expected version %s, got %s", exp.version, deps[i].Version)
-		}
-		if deps[i].Language != "python3" {
-			t.Errorf("expected language python3, got %s", deps[i].Language)
-		}
-	}
-}
-
 func TestParsePackageJson(t *testing.T) {
 	content := `{
   "dependencies": {
@@ -60,28 +23,62 @@ func TestParsePackageJson(t *testing.T) {
 		t.Fatalf("expected 3 dependencies, got %d", len(deps))
 	}
 
-	expected := []struct {
-		name    string
+	expectedMap := map[string]struct {
 		version string
 		remark  string
 	}{
-		{"lodash", "4.17.21", ""},
-		{"express", "4.18.2", ""},
-		{"typescript", "5.0.4", "devDependencies"},
+		"lodash":     {"4.17.21", "dependencies"},
+		"express":    {"4.18.2", "dependencies"},
+		"typescript": {"5.0.4", "devDependencies"},
 	}
 
-	for i, exp := range expected {
-		if deps[i].Name != exp.name {
-			t.Errorf("expected name %s, got %s", exp.name, deps[i].Name)
+	for _, dep := range deps {
+		exp, ok := expectedMap[dep.Name]
+		if !ok {
+			t.Errorf("unexpected dependency: %s", dep.Name)
+			continue
 		}
-		if deps[i].Version != exp.version {
-			t.Errorf("expected version %s, got %s", exp.version, deps[i].Version)
+		if dep.Version != exp.version {
+			t.Errorf("for %s, expected version %s, got %s", dep.Name, exp.version, dep.Version)
 		}
-		if deps[i].Remark != exp.remark {
-			t.Errorf("expected remark %s, got %s", exp.remark, deps[i].Remark)
+		if dep.Remark != exp.remark {
+			t.Errorf("for %s, expected remark %s, got %s", dep.Name, exp.remark, dep.Remark)
 		}
-		if deps[i].Language != "node" {
-			t.Errorf("expected language node, got %s", deps[i].Language)
+		if dep.Language != "node" {
+			t.Errorf("for %s, expected language node, got %s", dep.Name, dep.Language)
+		}
+	}
+}
+
+func TestParsePackageList(t *testing.T) {
+	content := `
+# some comment
+axios@^1.6.0
+lodash
+@types/node@20.0.0
+`
+	deps := ParsePackageList(content)
+	if len(deps) != 3 {
+		t.Fatalf("expected 3 dependencies, got %d", len(deps))
+	}
+
+	expectedMap := map[string]string{
+		"axios":       "1.6.0",
+		"lodash":      "",
+		"@types/node": "20.0.0",
+	}
+
+	for _, dep := range deps {
+		expVer, ok := expectedMap[dep.Name]
+		if !ok {
+			t.Errorf("unexpected dependency: %s", dep.Name)
+			continue
+		}
+		if dep.Version != expVer {
+			t.Errorf("for %s, expected version %s, got %s", dep.Name, expVer, dep.Version)
+		}
+		if dep.Language != "node" {
+			t.Errorf("for %s, expected language node, got %s", dep.Name, dep.Language)
 		}
 	}
 }
